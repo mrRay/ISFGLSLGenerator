@@ -32,7 +32,6 @@ using namespace std;
 
 
 ISFDoc::ISFDoc(const string & inFSContents, const string & inVSContents, const string & inImportsDir, ISFScene * inParentScene, const bool & throwExcept)	{
-	_parentScene = inParentScene;
 	
 	//_path = new string("");
 	if (inImportsDir.length() < 1)
@@ -52,16 +51,16 @@ ISFDoc::ISFDoc(const string & inFSContents, const string & inVSContents, const s
 	_initWithRawFragShaderString(inFSContents);
 }
 ISFDoc::ISFDoc(const string & inPath, ISFScene * inParentScene, const bool & throwExcept) noexcept(false)	{
-	//cout << __PRETTY_FUNCTION__ << endl;
-	//cout << "\t" << inPath << endl;
-	
-	_parentScene = inParentScene;
+	cout << __PRETTY_FUNCTION__ << endl;
+	cout << "\t" << inPath << endl;
 	
 	//	set the local path and name variables
 	_path = new string(inPath);
 	//_name = new string(LastPathComponent(inPath));
 	const std::filesystem::path		fullPath{inPath};
-	*_name = fullPath.filename().string();
+	cout << "\tfilsystem::path is " << fullPath << endl;
+	cout << "\tthe filename is " << fullPath.filename().string() << endl;
+	_name = new string( fullPath.filename().string() );
 	_throwExcept = throwExcept;
 	//cout << "\tpath is " << *_path << endl;
 	//cout << "\tname is " << *_name << endl;
@@ -177,6 +176,7 @@ ISFAttrRef ISFDoc::input(const string & inAttrName)	{
 	}
 	return nullptr;
 }
+/*
 const ISFImageRef ISFDoc::getImageForKey(const string & n)	{
 	lock_guard<recursive_mutex>		lock(_propLock);
 	
@@ -221,6 +221,7 @@ const ISFImageRef ISFDoc::getTempBufferForKey(const string & n)	{
 	}
 	return nullptr;
 }
+*/
 const ISFPassTargetRef ISFDoc::passTargetForKey(const string & n)	{
 	ISFPassTargetRef		returnMe = persistentPassTargetForKey(n);
 	if (returnMe == nullptr)
@@ -339,7 +340,7 @@ string ISFDoc::generateTextureTypeString()	{
 	}
 	return returnMe;
 }
-bool ISFDoc::generateShaderSource(string * outFragSrc, string * outVertSrc, GLVersion & inGLVers, const bool & inVarsAsUBO)	{
+bool ISFDoc::generateShaderSource(string * outFragSrc, string * outVertSrc, const GLVersion & inGLVers, const bool & inVarsAsUBO)	{
 	//cout << __PRETTY_FUNCTION__ << ", vers is " << inGLVers << endl;
 	lock_guard<recursive_mutex>		lock(_propLock);
 	
@@ -375,7 +376,6 @@ bool ISFDoc::generateShaderSource(string * outFragSrc, string * outVertSrc, GLVe
 	//size_t			findIndex;
 	Range		tmpRange(0,0);
 	string			searchString("");
-	ISFImageRef		imgBuffer = nullptr;
 	string			modSrcString("");
 	string			newString("");
 	size_t			tmpIndex;
@@ -453,7 +453,6 @@ bool ISFDoc::generateShaderSource(string * outFragSrc, string * outVertSrc, GLVe
 		
 		//	now find-and-replace IMG_PIXEL
 		searchString = string("IMG_PIXEL");
-		imgBuffer = nullptr;
 		tmpRange = Range(0, searchString.size());
 		do	{
 			tmpRange = Range(modSrcString.find(searchString), searchString.size());
@@ -483,7 +482,6 @@ bool ISFDoc::generateShaderSource(string * outFragSrc, string * outVertSrc, GLVe
 					const char *	samplerNameC = samplerName.c_str();
 					string &		samplerCoord = varArray[1];
 					const char *	samplerCoordC = samplerCoord.c_str();
-					imgBuffer = getImageForKey(samplerName);
 					if (varArrayCount==3)	{
 						newFuncString = FmtString("VVSAMPLER_2DBYPIXEL(%s, _%s_imgRect, _%s_imgSize, _%s_flip, %s, %s)",samplerNameC,samplerNameC,samplerNameC,samplerNameC,samplerCoordC,varArray[2].c_str());
 						requires2DBiasMacro = true;
@@ -500,7 +498,6 @@ bool ISFDoc::generateShaderSource(string * outFragSrc, string * outVertSrc, GLVe
 		
 		//	now find-and-replace IMG_NORM_PIXEL
 		searchString = string("IMG_NORM_PIXEL");
-		imgBuffer = nullptr;
 		tmpRange = Range(0, searchString.size());
 		do	{
 			tmpRange = Range(modSrcString.find(searchString), searchString.size());
@@ -530,7 +527,6 @@ bool ISFDoc::generateShaderSource(string * outFragSrc, string * outVertSrc, GLVe
 					const char *	samplerNameC = samplerName.c_str();
 					string &		samplerCoord = varArray[1];
 					const char *	samplerCoordC = samplerCoord.c_str();
-					imgBuffer = getImageForKey(samplerName);
 					if (varArrayCount==3)	{
 						newFuncString = FmtString("VVSAMPLER_2DBYNORM(%s, _%s_imgRect, _%s_imgSize, _%s_flip, %s, %s)",samplerNameC,samplerNameC,samplerNameC,samplerNameC,samplerCoordC,varArray[2].c_str());
 						requires2DBiasMacro = true;
@@ -547,7 +543,6 @@ bool ISFDoc::generateShaderSource(string * outFragSrc, string * outVertSrc, GLVe
 		
 		//	now find-and-replace IMG_THIS_PIXEL
 		searchString = string("IMG_THIS_PIXEL");
-		imgBuffer = nullptr;
 		tmpRange = Range(0, searchString.size());
 		do	{
 			tmpRange = Range(modSrcString.find(searchString), searchString.size());
@@ -582,8 +577,6 @@ bool ISFDoc::generateShaderSource(string * outFragSrc, string * outVertSrc, GLVe
 					
 					if (find(imgThisPixelSamplerNames.begin(), imgThisPixelSamplerNames.end(), samplerName) == imgThisPixelSamplerNames.end())
 						imgThisPixelSamplerNames.push_back(samplerName);
-					
-					imgBuffer = getImageForKey(samplerName);
 					
 					switch (inGLVers)	{
 					case GLVersion_Unknown:
@@ -624,7 +617,6 @@ bool ISFDoc::generateShaderSource(string * outFragSrc, string * outVertSrc, GLVe
 		
 		//	now find-and-replace IMG_THIS_NORM_PIXEL
 		searchString = string("IMG_THIS_NORM_PIXEL");
-		imgBuffer = nullptr;
 		tmpRange = Range(0, searchString.size());
 		do	{
 			tmpRange = Range(modSrcString.find(searchString), searchString.size());
@@ -656,7 +648,6 @@ bool ISFDoc::generateShaderSource(string * outFragSrc, string * outVertSrc, GLVe
 					if (find(imgThisNormPixelSamplerNames.begin(), imgThisNormPixelSamplerNames.end(), samplerName) == imgThisNormPixelSamplerNames.end())
 						imgThisNormPixelSamplerNames.push_back(samplerName);
 					
-					imgBuffer = getImageForKey(samplerName);
 					switch (inGLVers)	{
 					case GLVersion_Unknown:
 					case GLVersion_2:
@@ -696,7 +687,6 @@ bool ISFDoc::generateShaderSource(string * outFragSrc, string * outVertSrc, GLVe
 		
 		//	now find-and-replace IMG_SIZE
 		searchString = string("IMG_SIZE");
-		imgBuffer = nullptr;
 		tmpRange = Range(0, searchString.size());
 		do	{
 			tmpRange = Range(modSrcString.find(searchString), searchString.size());
@@ -905,7 +895,6 @@ bool ISFDoc::generateShaderSource(string * outFragSrc, string * outVertSrc, GLVe
 		
 		//	now find-and-replace IMG_PIXEL
 		searchString = string("IMG_PIXEL");
-		imgBuffer = nullptr;
 		tmpRange = Range(0, searchString.size());
 		do	{
 			tmpRange = Range(modSrcString.find(searchString), searchString.size());
@@ -928,7 +917,6 @@ bool ISFDoc::generateShaderSource(string * outFragSrc, string * outVertSrc, GLVe
 					const char *	samplerNameC = samplerName.c_str();
 					string &		samplerCoord = varArray[1];
 					const char *	samplerCoordC = samplerCoord.c_str();
-					imgBuffer = getImageForKey(samplerName);
 					if (varArrayCount==3)	{
 						newFuncString = FmtString("VVSAMPLER_2DBYPIXEL(%s, _%s_imgRect, _%s_imgSize, _%s_flip, %s, %s)",samplerNameC,samplerNameC,samplerNameC,samplerNameC,samplerCoordC,varArray[2].c_str());
 						requires2DBiasMacro = true;
@@ -945,7 +933,6 @@ bool ISFDoc::generateShaderSource(string * outFragSrc, string * outVertSrc, GLVe
 		
 		//	now find-and-replace IMG_NORM_PIXEL
 		searchString = string("IMG_NORM_PIXEL");
-		imgBuffer = nullptr;
 		tmpRange = Range(0, searchString.size());
 		do	{
 			tmpRange = Range(modSrcString.find(searchString), searchString.size());
@@ -968,7 +955,6 @@ bool ISFDoc::generateShaderSource(string * outFragSrc, string * outVertSrc, GLVe
 					const char *	samplerNameC = samplerName.c_str();
 					string &		samplerCoord = varArray[1];
 					const char *	samplerCoordC = samplerCoord.c_str();
-					imgBuffer = getImageForKey(samplerName);
 					if (varArrayCount==3)	{
 						newFuncString = FmtString("VVSAMPLER_2DBYNORM(%s, _%s_imgRect, _%s_imgSize, _%s_flip, %s, %s)",samplerNameC,samplerNameC,samplerNameC,samplerNameC,samplerCoordC,varArray[2].c_str());
 						requires2DBiasMacro = true;
@@ -985,7 +971,6 @@ bool ISFDoc::generateShaderSource(string * outFragSrc, string * outVertSrc, GLVe
 		
 		//	now find-and-replace IMG_SIZE
 		searchString = string("IMG_SIZE");
-		imgBuffer = nullptr;
 		tmpRange = Range(0, searchString.size());
 		do	{
 			tmpRange = Range(modSrcString.find(searchString), searchString.size());
@@ -1042,7 +1027,6 @@ bool ISFDoc::generateShaderSource(string * outFragSrc, string * outVertSrc, GLVe
 		//	run through the IMG_THIS_NORM_PIXEL sampler names, populating the varying vec2 variables i declared
 		for (const auto & it : imgThisNormPixelSamplerNames)	{
 			const char *	samplerName = it.c_str();
-			imgBuffer = getImageForKey(it);
 			newVertShaderSrc.append(FmtString("\t_%s_normTexCoord = (_%s_flip) \
 				? vec2((((isf_FragNormCoord.x*_%s_imgSize.x)/_%s_imgSize.x*_%s_imgRect.z)+_%s_imgRect.x), (_%s_imgRect.w-((isf_FragNormCoord.y*_%s_imgSize.y)/_%s_imgSize.y*_%s_imgRect.w)+_%s_imgRect.y)) \
 				: vec2((((isf_FragNormCoord.x*_%s_imgSize.x)/_%s_imgSize.x*_%s_imgRect.z)+_%s_imgRect.x), ((isf_FragNormCoord.y*_%s_imgSize.y)/_%s_imgSize.y*_%s_imgRect.w)+_%s_imgRect.y);\n",
@@ -2033,7 +2017,7 @@ void ISFDoc::_initWithRawFragShaderString(const string & inRawFile)	{
 			_type = ISFFileType_Transition;
 	}
 }
-bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string * outFSString, GLVersion & inGLVers, const bool & inVarsAsUBO)	{
+bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string * outFSString, const GLVersion & inGLVers, const bool & inVarsAsUBO)	{
 	lock_guard<recursive_mutex>		lock(_propLock);
 	
 	if (outVSString==nullptr || outFSString==nullptr)

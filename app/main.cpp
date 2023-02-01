@@ -1,5 +1,5 @@
 //#include "ISFGLSLGenerator.h"
-#include "ISFVal.hpp"
+#include "VVISF.hpp"
 #include <iostream>
 #include <typeinfo>
 
@@ -8,7 +8,7 @@ using namespace VVISF;
 
 
 
-
+/*
 class MyImage	{
 private:
 	void		*imageData;
@@ -35,41 +35,39 @@ public:
 		return *this;
 	}
 };
-
+*/
 
 
 
 int main(int argc, const char * argv[]) {
 	cout << __PRETTY_FUNCTION__ << endl;
-	cout << "Hello, world!" << endl;
-	
-	//cout << TestEXPRTKFunction("3+3") << endl;
-
-	//ISFVal<double>		tmpVal;
-	//tmpVal = 3;
+	//cout << "Hello, world!" << endl;
 	
 	//	simulate the creation of a user-provided image object
-	void			*fakeImageData;
-	MyImage			tmpImg(fakeImageData);
-	cout << "tmpImg class is " << typeid(tmpImg).name() << endl;
+	//void			*fakeImageData;
+	//MyImage			tmpImg(fakeImageData);
+	//cout << "tmpImg class is " << typeid(tmpImg).name() << endl;
 	
+	string			tmpString("/Users/testadmin/Documents/VDMX5/VDMX5/supplemental resources/ISF tests+tutorials/Test-Functionality.fs");
+	ISFDocRef		tmpDoc = CreateISFDocRef(tmpString);
+	string			*fragSrc = new std::string();
+	string			*vertSrc = new std::string();
+	tmpDoc->generateShaderSource(fragSrc, vertSrc, GLVersion_4, false);
 	
+	/*
+	cout << "******************" << endl;
+	cout << *vertSrc << endl;
+	cout << "******************" << endl;
+	cout << "******************" << endl;
+	cout << *fragSrc << endl;
+	cout << "******************" << endl;
+	*/
 	
+	delete fragSrc;
+	fragSrc = nullptr;
+	delete vertSrc;
+	vertSrc = nullptr;
 	
-	
-	//ISFVal			tmpVal;
-	//tmpVal.emplace<CreateISFValFloat>(4.20);
-	//
-	//if (const double * floatPtr = std::get_if<ISFValType_Float>(&tmpVal))
-	//	cout << "variant is a float and its val is " << *floatPtr << endl;
-	//else
-	//	cout << "variant is not a float!" << endl;
-	
-	
-	//tmpVal = tmpImg;
-	//cout << "tmpImg's dims are " << tmpVal.width << " x " << tmpVal.height << endl;
-	//cout << "MyImage's ptr is " << tmpImg.imageData << endl;
-
 	cout << "Goodbye, world!" << endl;
 	
 	return 0;

@@ -257,6 +257,34 @@ string ISFVal::getValString() const	{
 }
 
 
+/*	========================================	*/
+#pragma mark --------------------- factory functions (creates ISFVal instances)
+
+
+ISFVal CreateISFValNull()	{
+	return ISFVal();
+}
+ISFVal CreateISFValEvent(const bool & n)	{
+	return ISFVal(ISFValType_Event, n);
+}
+ISFVal CreateISFValBool(const bool & n)	{
+	return ISFVal(ISFValType_Bool, n);
+}
+ISFVal CreateISFValLong(const int32_t & n)	{
+	return ISFVal(ISFValType_Long, n);
+}
+ISFVal CreateISFValFloat(const double & n)	{
+	return ISFVal(ISFValType_Float, n);
+}
+ISFVal CreateISFValPoint2D(const double & inX, const double & inY)	{
+	return ISFVal(ISFValType_Point2D, inX, inY);
+}
+ISFVal CreateISFValColor(const double & inR, const double & inG, const double & inB, const double & inA)	{
+	return ISFVal(ISFValType_Color, inR, inG, inB, inA);
+}
+ISFVal CreateISFValImage(const ISFImageRef & inRef)	{
+	return ISFVal(ISFValType_Image, inRef);
+}
 
 
 }

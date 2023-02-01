@@ -197,65 +197,49 @@ struct ISFVal	{
 \relatesalso VVISF::ISFVal
 \brief Creates and returns a null-type ISFVal.
 */
-ISFVal CreateISFValNull()	{
-	return ISFVal();
-}
+ISFVal CreateISFValNull();
 
 /*!
 \relatesalso VVISF::ISFVal
 \brief Creates and returns an event-type ISFVal.  Events don't technically have a value- events should send a "true" for one frame and a false for every other frame.  For convenience, ISFVal uses a bool to cache the event value.
 */
-ISFVal CreateISFValEvent(const bool & n)	{
-	return ISFVal(ISFValType_Event, n);
-}
+ISFVal CreateISFValEvent(const bool & n=false);
 
 /*!
 \relatesalso VVISF::ISFVal
 \brief Creates and returns a boolean-type ISFVal with the passed value.
 */
-ISFVal CreateISFValBool(const bool & n)	{
-	return ISFVal(ISFValType_Bool, n);
-}
+ISFVal CreateISFValBool(const bool & n);
 
 /*!
 \relatesalso VVISF::ISFVal
 \brief Creates and returns a long-type ISFVal with the passed value.
 */
-ISFVal CreateISFValLong(const int32_t & n)	{
-	return ISFVal(ISFValType_Long, n);
-}
+ISFVal CreateISFValLong(const int32_t & n);
 
 /*!
 \relatesalso VVISF::ISFVal
 \brief Creates and returns a float-type ISFVal with the passed value.
 */
-ISFVal CreateISFValFloat(const double & n)	{
-	return ISFVal(ISFValType_Float, n);
-}
+ISFVal CreateISFValFloat(const double & n);
 
 /*!
 \relatesalso VVISF::ISFVal
 \brief Creates and returns a 2d point-type ISFVal with the passed point values.
 */
-ISFVal CreateISFValPoint2D(const double & inX, const double & inY)	{
-	return ISFVal(ISFValType_Point2D, inX, inY);
-}
+ISFVal CreateISFValPoint2D(const double & inX, const double & inY);
 
 /*!
 \relatesalso VVISF::ISFVal
 \brief Creates and returns a color-type ISFVal with the passed R/G/B/A color values.
 */
-ISFVal CreateISFValColor(const double & inR, const double & inG, const double & inB, const double & inA)	{
-	return ISFVal(ISFValType_Color, inR, inG, inB, inA);
-}
+ISFVal CreateISFValColor(const double & inR, const double & inG, const double & inB, const double & inA);
 
 /*!
 \relatesalso VVISF::ISFVal
 \brief Creates and returns an image-type ISFVal with the passed buffer.
 */
-ISFVal CreateISFValImage(const ISFImageRef & inRef)	{
-	return ISFVal(ISFValType_Image, inRef);
-}
+ISFVal CreateISFValImage(const ISFImageRef & inRef);
 
 
 

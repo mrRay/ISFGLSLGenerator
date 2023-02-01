@@ -59,8 +59,6 @@ class ISFDoc	{
 		std::string			*_vertShaderSource = nullptr;	//	the raw vert shader source before being find-and-replaced
 		std::string			*_fragShaderSource = nullptr;	//	the raw frag shader source before being find-and-replaced
 		
-		ISFScene		*_parentScene = nullptr;	//	nil by default, weak ref to the scene that "owns" me.  only non-nil when an ISFScene is using the doc to render.
-		
 	public:
 		
 		/*!
@@ -149,12 +147,14 @@ class ISFDoc	{
 		std::vector<ISFPassTargetRef> tempPassTargets() const { return _tempPassTargets; }
 		//!	Returns a std::vector of std::std::string instances describing the names of the render passes, in order.  If the names were not specified properly in the JSON blob, this array will be incomplete or inaccurate and rendering won't work!
 		std::vector<std::string> & renderPasses() { return _renderPasses; }
+		/*
 		//!	Returns the ISFImageRef for the passed key.  Checks all attributes/inputs as well as persistent and temp buffers.
 		const ISFImageRef getImageForKey(const std::string & n);
 		//!	Returns the persistent buffer for the render pass with the passed key.
 		const ISFImageRef getPersistentImageForKey(const std::string & n);
 		//!	Returns the temp buffer for the render pass with the passed key.
 		const ISFImageRef getTempBufferForKey(const std::string & n);
+		*/
 		//!	Returns the ISFPassTarget that matches the passed key.  Returns null if no pass could be found.
 		const ISFPassTargetRef passTargetForKey(const std::string & n);
 		//!	Returns the ISFPassTarget that matches the passed key.  Returns null if no pass could be found or if the pass found wasn't flagged as requiring a persistent buffer.
@@ -183,11 +183,9 @@ class ISFDoc	{
 		
 		///@}
 		
-		void setParentScene(ISFScene * n) { _parentScene=n; }
-		ISFScene * parentScene() { return _parentScene; }
-		
-		//	returns a std::string describing the type of the expected texture samplers ("2" for 2D, "R" for Rect, "C" for Cube).  save this, if it changes in a later pass the shader source must be generated again.
+		//	returns a std::string describing the type of the expected texture samplers ("R" for Rect, "C" for Cube).  save this, if it changes in a later pass the shader source must be generated again.
 		std::string generateTextureTypeString();
+		
 		/*!
 		\brief Returns a true if successful.  Generates GLSL source code, populating the provided vars with strings that are usable for frag/vert shaders
 		\param outFragSrc A non-null pre-allocated std::std::string variable which will be populated with the fragment shader source code generated for this ISF file.
@@ -195,7 +193,7 @@ class ISFDoc	{
 		\param inGLVers The version of OpenGL that the generated source code must be compatible with.
 		\param inVarsAsUBO Defaults to false.  If true, variable declarations for non-image INPUTS will be assembled in a uniform block.  This option was added because a downstream utility requires it.
 		*/
-		bool generateShaderSource(std::string * outFragSrc, std::string * outVertSrc, GLVersion & inGLVers, const bool & inVarsAsUBO=false);
+		bool generateShaderSource(std::string * outFragSrc, std::string * outVertSrc, const GLVersion & inGLVers, const bool & inVarsAsUBO=false);
 		//	this method must be called before rendering (passes/etc may have expressions that require the render dims to be evaluated)
 		void evalBufferDimensionsWithRenderSize(const int & inWidth, const int & inHeight);
 		
@@ -205,7 +203,7 @@ class ISFDoc	{
 		//	used so we can have two constructors without duplicating code
 		void _initWithRawFragShaderString(const std::string & inRawFile);
 		//	returns a true if successful.  populates a std::string with variable declarations for a frag shader
-		bool _assembleShaderSource_VarDeclarations(std::string * outVSString, std::string * outFSString, GLVersion & inGLVers, const bool & inVarsAsUBO=false);
+		bool _assembleShaderSource_VarDeclarations(std::string * outVSString, std::string * outFSString, const GLVersion & inGLVers, const bool & inVarsAsUBO=false);
 		//	returns a true if successful.  populates a map with std::string/value pairs that will be used to evaluate variable names in strings
 		bool _assembleSubstitutionMap(std::map<std::string,double*> * outMap);
 };
