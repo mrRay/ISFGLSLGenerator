@@ -8,6 +8,7 @@
 #include <map>
 #include <iostream>
 #include <limits>
+#include <filesystem>
 
 #include "VVISF_StringUtils.hpp"
 
@@ -55,12 +56,6 @@ using ISFDocRef = std::shared_ptr<ISFDoc>;
 \relates VVISF::ISFAttr
 */
 using ISFAttrRef = std::shared_ptr<ISFAttr>;
-//! ISFSceneRef is a shared pointer around an ISFScene instance.
-/*!
-\relates VVISF::ISFScene
-ISFScene is a subclass of GLScene, and like its parent, you should strive to work exclusively with ISFSceneRef instead of ISFScene directly.
-*/
-//using ISFSceneRef = std::shared_ptr<ISFScene>;
 
 
 
@@ -172,6 +167,9 @@ struct Range	{
 
 
 
+
+std::filesystem::path GetHomeDirectory();
+std::filesystem::path PathByExpandingTildeInPath(const std::filesystem::path & inPath);
 
 /*!
 \brief Scans the passed path for valid ISF files, returns an array of strings/paths to the detected files.

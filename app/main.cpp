@@ -2,6 +2,7 @@
 #include "VVISF.hpp"
 #include <iostream>
 #include <typeinfo>
+#include <filesystem>
 
 using namespace std;
 using namespace VVISF;
@@ -53,6 +54,26 @@ int main(int argc, const char * argv[]) {
 	string			*fragSrc = new std::string();
 	string			*vertSrc = new std::string();
 	tmpDoc->generateShaderSource(fragSrc, vertSrc, GLVersion_4, false);
+	
+	
+	//string			baseDir = VVISF::PathByExpandingTildeInPath("/Library/Graphics/ISF");
+	//std::shared_ptr<vector<string>>		files = CreateArrayOfISFsForPath(baseDir, ISFFileType_All);
+	
+	std::shared_ptr<vector<string>>		files = CreateArrayOfDefaultISFs();
+	
+	for (const auto & file : *files)	{
+		cout << "\tfound file " << std::filesystem::path(file).stem() << endl;
+		ISFDocRef		tmpDoc = CreateISFDocRef(file);
+		std::string		fragSrc;
+		std::string		vertSrc;
+		tmpDoc->generateShaderSource(&fragSrc, &vertSrc, GLVersion_2, false);
+		cout << "***************************************************************" << endl;
+		cout << vertSrc << endl;
+		cout << "***************************************************************" << endl;
+		cout << fragSrc << endl;
+		cout << "***************************************************************" << endl;
+		break;
+	}
 	
 	/*
 	cout << "******************" << endl;

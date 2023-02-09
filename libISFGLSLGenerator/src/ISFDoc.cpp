@@ -5,7 +5,6 @@
 #include <fstream>
 
 #include "ISFPassTarget.hpp"
-//#include "ISFScene.hpp"
 
 #include "nlohmann_json/json.hpp"
 using json = nlohmann::json;
@@ -31,7 +30,7 @@ using namespace std;
 #pragma mark --------------------- constructor/destructor
 
 
-ISFDoc::ISFDoc(const string & inFSContents, const string & inVSContents, const string & inImportsDir, ISFScene * inParentScene, const bool & throwExcept)	{
+ISFDoc::ISFDoc(const string & inFSContents, const string & inVSContents, const string & inImportsDir, const bool & throwExcept)	{
 	
 	//_path = new string("");
 	if (inImportsDir.length() < 1)
@@ -50,16 +49,16 @@ ISFDoc::ISFDoc(const string & inFSContents, const string & inVSContents, const s
 	
 	_initWithRawFragShaderString(inFSContents);
 }
-ISFDoc::ISFDoc(const string & inPath, ISFScene * inParentScene, const bool & throwExcept) noexcept(false)	{
-	cout << __PRETTY_FUNCTION__ << endl;
-	cout << "\t" << inPath << endl;
+ISFDoc::ISFDoc(const string & inPath, const bool & throwExcept) noexcept(false)	{
+	//cout << __PRETTY_FUNCTION__ << endl;
+	//cout << "\t" << inPath << endl;
 	
 	//	set the local path and name variables
 	_path = new string(inPath);
 	//_name = new string(LastPathComponent(inPath));
 	const std::filesystem::path		fullPath{inPath};
-	cout << "\tfilsystem::path is " << fullPath << endl;
-	cout << "\tthe filename is " << fullPath.filename().string() << endl;
+	//cout << "\tfilsystem::path is " << fullPath << endl;
+	//cout << "\tthe filename is " << fullPath.filename().string() << endl;
 	_name = new string( fullPath.filename().string() );
 	_throwExcept = throwExcept;
 	//cout << "\tpath is " << *_path << endl;
