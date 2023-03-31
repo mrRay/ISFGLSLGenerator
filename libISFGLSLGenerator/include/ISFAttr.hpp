@@ -40,6 +40,8 @@ class ISFAttr	{
 		int32_t				_uniformLocation[4] = { -1, -1, -1, -1 };	//	the location of this attribute in the compiled GLSL program. cached here because lookup times are costly when performed every frame.  there are 4 because images require four uniforms (one of the texture name, one for the size, one for the img rect, and one for the flippedness)
 		
 		double				_evalVariable = 1.0;	//	attribute values are available in expression evaluation- to support this, each attribute needs to maintain a double which it populates with its current value
+		
+		uint32_t			_offsetInBuffer = std::numeric_limits<uint32_t>::max();	//	offset (in bytes) into the buffer passed to the shader at which this attribute's data is stored.  a "max" value indicates that the offset is unknown and probably shouldn't be written!
 	public:
 		
 		/*
@@ -84,9 +86,9 @@ class ISFAttr	{
 		//!	Returns a true if this attribute's value is expressed with an image buffer
 		inline bool shouldHaveImageBuffer() const { return ISFValTypeUsesImage(_type); }
 		//!	Returns the receiver's image buffer
-		inline ISFImageRef getCurrentImageRef() { if (!shouldHaveImageBuffer()) return nullptr; return _currentVal.getImageRef(); }
+		inline ISFImageInfoRef getCurrentImageRef() { if (!shouldHaveImageBuffer()) return nullptr; return _currentVal.getImageRef(); }
 		//!	Sets the receiver's current value with the passed image buffer
-		inline void setCurrentImageRef(const ISFImageRef & n) { /*cout<<__PRETTY_FUNCTION__<<"..."<<*this<<", "<<*n<<endl;*/if (shouldHaveImageBuffer()) _currentVal = CreateISFValImage(n); else std::cout << "\terr: tried to set current image ref in non-image attr (" << _name << ")\n"; /*cout<<"\tcurrentVal is now "<<_currentVal<<endl;*/ }
+		inline void setCurrentImageRef(const ISFImageInfoRef & n) { /*cout<<__PRETTY_FUNCTION__<<"..."<<*this<<", "<<*n<<endl;*/if (shouldHaveImageBuffer()) _currentVal = CreateISFValImage(n); else std::cout << "\terr: tried to set current image ref in non-image attr (" << _name << ")\n"; /*cout<<"\tcurrentVal is now "<<_currentVal<<endl;*/ }
 		//!	Gets the attribute's min val
 		inline ISFVal & minVal() { return _minVal; }
 		//!	Gets the attribute's max val
@@ -99,6 +101,12 @@ class ISFAttr	{
 		inline std::vector<std::string> & labelArray() { return _labelArray; }
 		//!	Gets the attribute's values as a std::vector of int values.  Only used if the attribute is a 'long'.
 		inline std::vector<int32_t> & valArray() { return _valArray; }
+		
+		//!	Gets the offset (in bytes) at which this attribute's value is stored in the buffer that is sent to the GPU.  the first attribute's offset is 0, further assets are appended
+		inline uint32_t & offsetInBuffer() { return _offsetInBuffer; }
+		//!	Sets the offset (in bytes) at which this attribute's value is stored in the buffer that is sent to the GPU.  Convenience method- it is not populated by this class!
+		inline void setOffsetInBuffer(const uint32_t & n) { _offsetInBuffer = n; }
+		
 		//!	Returns a true if this attribute is used to send the input image to the filter.
 		inline bool isFilterInputImage() { return _isFilterInputImage; }
 		inline void setIsFilterInputImage(const bool & n) { _isFilterInputImage=n; }

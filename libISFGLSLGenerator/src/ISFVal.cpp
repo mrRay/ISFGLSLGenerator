@@ -176,7 +176,7 @@ int32_t ISFVal::getLongVal() const	{
 	}
 	return returnMe;
 }
-ISFImageRef ISFVal::getImageRef() const	{
+ISFImageInfoRef ISFVal::getImageRef() const	{
 	//cout << __FUNCTION__ << ", self is " << this << endl;
 	switch (_type)	{
 	case ISFValType_None:
@@ -199,7 +199,7 @@ ISFImageRef ISFVal::getImageRef() const	{
 	}
 	return nullptr;
 }
-void ISFVal::setImageRef(const ISFImageRef & n)	{
+void ISFVal::setImageRef(const ISFImageInfoRef & n)	{
 	//cout << __FUNCTION__ << ", self is " << this << endl;
 	switch (_type)	{
 	case ISFValType_None:
@@ -282,7 +282,9 @@ ISFVal CreateISFValPoint2D(const double & inX, const double & inY)	{
 ISFVal CreateISFValColor(const double & inR, const double & inG, const double & inB, const double & inA)	{
 	return ISFVal(ISFValType_Color, inR, inG, inB, inA);
 }
-ISFVal CreateISFValImage(const ISFImageRef & inRef)	{
+ISFVal CreateISFValImage(const ISFImageInfoRef & inRef)	{
+	if (inRef == nullptr)
+		return CreateISFValNull();
 	return ISFVal(ISFValType_Image, inRef);
 }
 

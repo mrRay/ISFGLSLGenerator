@@ -44,6 +44,44 @@ int main(int argc, const char * argv[]) {
 	cout << __PRETTY_FUNCTION__ << endl;
 	//cout << "Hello, world!" << endl;
 	
+	//string			tmpString("/Users/testadmin/Documents/VDMX5/VDMX5/supplemental resources/ISF tests+tutorials/Test-Audio.fs");
+	//string			tmpString("/Users/testadmin/Documents/VDMX5/VDMX5/supplemental resources/ISF tests+tutorials/Test-AudioFFT.fs");
+	//string			tmpString("/Users/testadmin/Documents/VDMX5/VDMX5/supplemental resources/ISF tests+tutorials/Test-Bool.fs");
+	//string			tmpString("/Users/testadmin/Documents/VDMX5/VDMX5/supplemental resources/ISF tests+tutorials/Test-Color.fs");
+	//string			tmpString("/Users/testadmin/Documents/VDMX5/VDMX5/supplemental resources/ISF tests+tutorials/Test-Event.fs");
+	//string			tmpString("/Users/testadmin/Documents/VDMX5/VDMX5/supplemental resources/ISF tests+tutorials/Test-Float.fs");
+	string			tmpString("/Users/testadmin/Documents/VDMX5/VDMX5/supplemental resources/ISF tests+tutorials/Test-Functionality.fs");
+	//string			tmpString("/Users/testadmin/Documents/VDMX5/VDMX5/supplemental resources/ISF tests+tutorials/Test-IMG_NORM_PIXEL.fs");
+	//string			tmpString("/Users/testadmin/Documents/VDMX5/VDMX5/supplemental resources/ISF tests+tutorials/Test-IMG_PIXEL.fs");
+	//string			tmpString("/Users/testadmin/Documents/VDMX5/VDMX5/supplemental resources/ISF tests+tutorials/Test-IMG_THIS_NORM_PIXEL.fs");
+	//string			tmpString("/Users/testadmin/Documents/VDMX5/VDMX5/supplemental resources/ISF tests+tutorials/Test-IMG_THIS_PIXEL.fs");
+	//string			tmpString("/Users/testadmin/Documents/VDMX5/VDMX5/supplemental resources/ISF tests+tutorials/Test-ImportedImage.fs");
+	//string			tmpString("/Users/testadmin/Documents/VDMX5/VDMX5/supplemental resources/ISF tests+tutorials/Test-Long.fs");
+	//string			tmpString("/Users/testadmin/Documents/VDMX5/VDMX5/supplemental resources/ISF tests+tutorials/Test-MultiPassRendering.fs");
+	//string			tmpString("/Users/testadmin/Documents/VDMX5/VDMX5/supplemental resources/ISF tests+tutorials/Test-PersistentBuffer.fs");
+	//string			tmpString("/Users/testadmin/Documents/VDMX5/VDMX5/supplemental resources/ISF tests+tutorials/Test-PersistentBufferDifferingSizes.fs");
+	//string			tmpString("/Users/testadmin/Documents/VDMX5/VDMX5/supplemental resources/ISF tests+tutorials/Test-Point.fs");
+	//string			tmpString("/Users/testadmin/Documents/VDMX5/VDMX5/supplemental resources/ISF tests+tutorials/Test-Sampler.fs");
+	//string			tmpString("/Users/testadmin/Documents/VDMX5/VDMX5/supplemental resources/ISF tests+tutorials/Test-TempBufferDifferingSizes.fs");
+	
+	ISFDocRef			tmpDoc = CreateISFDocRef(tmpString);
+	string			*fragSrc = new std::string();
+	string			*vertSrc = new std::string();
+	tmpDoc->generateShaderSource(fragSrc, vertSrc, GLVersion_4, false);
+	
+	cout << "***************************************************************" << endl;
+	cout << *vertSrc << endl;
+	cout << "***************************************************************" << endl;
+	cout << *fragSrc << endl;
+	cout << "***************************************************************" << endl;
+	
+	
+	delete fragSrc;
+	fragSrc = nullptr;
+	delete vertSrc;
+	vertSrc = nullptr;
+	
+	/*
 	//	simulate the creation of a user-provided image object
 	//void			*fakeImageData;
 	//MyImage			tmpImg(fakeImageData);
@@ -75,20 +113,21 @@ int main(int argc, const char * argv[]) {
 		break;
 	}
 	
-	/*
-	cout << "******************" << endl;
-	cout << *vertSrc << endl;
-	cout << "******************" << endl;
-	cout << "******************" << endl;
-	cout << *fragSrc << endl;
-	cout << "******************" << endl;
-	*/
+	
+	//cout << "******************" << endl;
+	//cout << *vertSrc << endl;
+	//cout << "******************" << endl;
+	//cout << "******************" << endl;
+	//cout << *fragSrc << endl;
+	//cout << "******************" << endl;
+	
 	
 	delete fragSrc;
 	fragSrc = nullptr;
 	delete vertSrc;
 	vertSrc = nullptr;
-	
+	*/
+
 	cout << "Goodbye, world!" << endl;
 	
 	return 0;

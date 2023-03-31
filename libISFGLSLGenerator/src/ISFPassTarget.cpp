@@ -71,44 +71,6 @@ ISFPassTarget::~ISFPassTarget()	{
 /*	========================================	*/
 #pragma mark --------------------- getters/setters
 
-void ISFPassTarget::setTargetSize(const int & inWidth, const int & inHeight, const bool & inResize, const bool & inCreateNewBuffer)	{
-	//using namespace VVISF;
-	using namespace std;
-	
-	_targetWidth = inWidth;
-	_targetHeight = inHeight;
-	
-	//	if the buffer's currently nil
-	if (_image == nullptr)	{
-		if (inCreateNewBuffer)	{
-			_image = make_shared<ISFImage>(inWidth, inHeight);
-		}
-	}
-	//	else there's a buffer...
-	else	{
-		//	if the buffer size is wrong...
-		if (inWidth != _image->width || inHeight != _image->height)	{
-			//	if i'm supposed to resize, do so
-			if (inResize)	{
-				ISFImageRef		newBuffer = make_shared<ISFImage>(inWidth, inHeight);
-				_image = newBuffer;
-			}
-			//	else i'm not supposed to resize
-			else	{
-				//	if i'm supposed to create a new buffer
-				if (inCreateNewBuffer)	{
-					_image = make_shared<ISFImage>(inWidth, inHeight);
-				}
-				//	else i'm not supposed to create a new buffer
-				else	{
-					_image = nullptr;
-				}
-			}
-		}
-		//	else the buffer size is fine- do nothing...
-		
-	}
-}
 void ISFPassTarget::setTargetWidthString(const string & n)	{
 	//cout << __PRETTY_FUNCTION__ << endl;
 	
@@ -165,7 +127,7 @@ void ISFPassTarget::setFloatFlag(const bool & n)	{
 		return;
 	_floatFlag = n;
 	if (_image != nullptr)	{
-		ISFImageRef		newBuffer = make_shared<ISFImage>(_targetWidth, _targetHeight);
+		ISFImageInfoRef		newBuffer = make_shared<ISFImageInfo>(_targetWidth, _targetHeight);
 		if (newBuffer != nullptr)	{
 			_image = newBuffer;
 		}
@@ -178,10 +140,7 @@ void ISFPassTarget::setPersistentFlag(const bool & n)	{
 /*	========================================	*/
 #pragma mark --------------------- methods
 
-void ISFPassTarget::clearBuffer()	{
-	_image = nullptr;
-}
-void ISFPassTarget::evalTargetSize(const int & inWidth, const int & inHeight, std::map<std::string, double*> & inSymbols, const bool & inResize, const bool & inCreateNewBuffer)
+void ISFPassTarget::evalTargetSize(const int & inWidth, const int & inHeight, std::map<std::string, double*> & inSymbols)
 {
 	using namespace exprtk;
 	
@@ -223,7 +182,8 @@ void ISFPassTarget::evalTargetSize(const int & inWidth, const int & inHeight, st
 	
 	//	set the target size based on the new size i just calculated
 	//cout << "\tsetting target size to " << newSize.width << " x " << newSize.height << endl;
-	setTargetSize(newWidth, newHeight, inResize, inCreateNewBuffer);
+	_targetWidth = newWidth;
+	_targetHeight = newHeight;
 	
 	//cout << "\t" << __FUNCTION__ << "- FINISHED" << endl;
 }

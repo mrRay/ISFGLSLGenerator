@@ -40,13 +40,12 @@ class ISFDoc	{
 		std::vector<std::string>	_categories;	//	array of strings of the category names this doc should be listed under
 		std::vector<ISFAttrRef>		_inputs;	//	array of ISFAttrRef instances for the various inputs
 		std::vector<ISFAttrRef>		_imageInputs;	//	array of ISFAttrRef instances for the image inputs (the image inputs are stored in two arrays).
-		std::vector<ISFAttrRef>		_audioInputs;	//	array of ISFAttrRef instances for the audio inputs
+		std::vector<ISFAttrRef>		_audioInputs;	//	array of ISFAttrRef instances for the audio inputs (the audio inputs are stored in two arrays)
 		std::vector<ISFAttrRef>		_imageImports;	//	array of ISFAttrRef instances that describe imported images. attrib's 'attribName' is the name of the sampler, attrib's 'description' is the path to the file.
 		
 		//bool					bufferRequiresEval = false;	//	NO by default, set to YES during file open if any of the buffers require evaluation (faster than checking every single buffer every pass)
-		std::vector<ISFPassTargetRef>	_persistentPassTargets;
-		std::vector<ISFPassTargetRef>	_tempPassTargets;
-		std::vector<std::string>		_renderPasses;
+		//std::vector<std::string>		_renderPasses;
+		std::vector<ISFPassTargetRef>	_renderPasses;
 		
 		std::string			*_jsonSourceString = nullptr;	//	the JSON std::string from the source *including the comments and any linebreaks before/after it*
 		std::string			*_jsonString = nullptr;	//	the JSON std::string copied from the source- doesn't include any comments before/after it
@@ -133,20 +132,8 @@ class ISFDoc	{
 		*/
 		///@{
 		
-		//!	Returns a std::vector of ISFPassTargetRef instances describing every pass that has a persistent buffer.
-		std::vector<ISFPassTargetRef> persistentPassTargets() const { return _persistentPassTargets; }
-		//!	Returns a std::vector of ISFPassTargetRef instances describing every pass that doesn't have a persistent buffer.
-		std::vector<ISFPassTargetRef> tempPassTargets() const { return _tempPassTargets; }
 		//!	Returns a std::vector of std::std::string instances describing the names of the render passes, in order.  If the names were not specified properly in the JSON blob, this array will be incomplete or inaccurate and rendering won't work!
-		std::vector<std::string> & renderPasses() { return _renderPasses; }
-		/*
-		//!	Returns the ISFImageRef for the passed key.  Checks all attributes/inputs as well as persistent and temp buffers.
-		const ISFImageRef getImageForKey(const std::string & n);
-		//!	Returns the persistent buffer for the render pass with the passed key.
-		const ISFImageRef getPersistentImageForKey(const std::string & n);
-		//!	Returns the temp buffer for the render pass with the passed key.
-		const ISFImageRef getTempBufferForKey(const std::string & n);
-		*/
+		std::vector<ISFPassTargetRef> & renderPasses() { return _renderPasses; }
 		//!	Returns the ISFPassTarget that matches the passed key.  Returns null if no pass could be found.
 		const ISFPassTargetRef passTargetForKey(const std::string & n);
 		//!	Returns the ISFPassTarget that matches the passed key.  Returns null if no pass could be found or if the pass found wasn't flagged as requiring a persistent buffer.
@@ -185,7 +172,7 @@ class ISFDoc	{
 		\param inGLVers The version of OpenGL that the generated source code must be compatible with.
 		\param inVarsAsUBO Defaults to false.  If true, variable declarations for non-image INPUTS will be assembled in a uniform block.  This option was added because a downstream utility requires it.
 		*/
-		bool generateShaderSource(std::string * outFragSrc, std::string * outVertSrc, const GLVersion & inGLVers, const bool & inVarsAsUBO=false);
+		bool generateShaderSource(std::string * outFragSrc, std::string * outVertSrc, const GLVersion & inGLVers, const bool & inVarsAsUBO=false, size_t * outUBOSize=nullptr);
 		//	this method must be called before rendering (passes/etc may have expressions that require the render dims to be evaluated)
 		void evalBufferDimensionsWithRenderSize(const int & inWidth, const int & inHeight);
 		
@@ -195,7 +182,7 @@ class ISFDoc	{
 		//	used so we can have two constructors without duplicating code
 		void _initWithRawFragShaderString(const std::string & inRawFile);
 		//	returns a true if successful.  populates a std::string with variable declarations for a frag shader
-		bool _assembleShaderSource_VarDeclarations(std::string * outVSString, std::string * outFSString, const GLVersion & inGLVers, const bool & inVarsAsUBO=false);
+		bool _assembleShaderSource_VarDeclarations(std::string * outVSString, std::string * outFSString, const GLVersion & inGLVers, const bool & inVarsAsUBO=false, size_t * outUBOSize=nullptr);
 		//	returns a true if successful.  populates a map with std::string/value pairs that will be used to evaluate variable names in strings
 		bool _assembleSubstitutionMap(std::map<std::string,double*> * outMap);
 };

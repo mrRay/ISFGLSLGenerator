@@ -175,81 +175,39 @@ ISFAttrRef ISFDoc::input(const string & inAttrName)	{
 	}
 	return nullptr;
 }
-/*
-const ISFImageRef ISFDoc::getImageForKey(const string & n)	{
-	lock_guard<recursive_mutex>		lock(_propLock);
-	
-	for (const auto & attribRefIt : _imageInputs)	{
-		if (attribRefIt->name() == n)
-			return attribRefIt->currentVal().getImageRef();
-	}
-	for (const auto & attribRefIt : _imageImports)	{
-		if (attribRefIt->name() == n)
-			return attribRefIt->currentVal().getImageRef();
-	}
-	for (const auto & attribRefIt : _audioInputs)	{
-		if (attribRefIt->name() == n)
-			return attribRefIt->currentVal().getImageRef();
-	}
-	
-	for (const auto & targetBufIt : _persistentPassTargets)	{
-		if (targetBufIt->name() == n)
-			return targetBufIt->image();
-	}
-	for (const auto & targetBufIt : _tempPassTargets)	{
-		if (targetBufIt->name() == n)
-			return targetBufIt->image();
-	}
-	return nullptr;
-}
-const ISFImageRef ISFDoc::getPersistentImageForKey(const string & n)	{
-	lock_guard<recursive_mutex>		lock(_propLock);
-	
-	for (const auto & targetBufIt : _persistentPassTargets)	{
-		if (targetBufIt->name() == n)
-			return targetBufIt->image();
-	}
-	return nullptr;
-}
-const ISFImageRef ISFDoc::getTempBufferForKey(const string & n)	{
-	lock_guard<recursive_mutex>		lock(_propLock);
-	
-	for (const auto & targetBufIt : _tempPassTargets)	{
-		if (targetBufIt->name() == n)
-			return targetBufIt->image();
-	}
-	return nullptr;
-}
-*/
 const ISFPassTargetRef ISFDoc::passTargetForKey(const string & n)	{
-	ISFPassTargetRef		returnMe = persistentPassTargetForKey(n);
-	if (returnMe == nullptr)
-		returnMe = tempPassTargetForKey(n);
-	return returnMe;
+	lock_guard<recursive_mutex>		lock(_propLock);
+	for (const ISFPassTargetRef tmpPassRef : _renderPasses)	{
+		if (tmpPassRef->name() == n)
+			return tmpPassRef;
+	}
+	return nullptr;
 }
 const ISFPassTargetRef ISFDoc::persistentPassTargetForKey(const string & n)	{
 	//cout << __PRETTY_FUNCTION__ << ", key is \"" << n << "\"" << endl;
 	lock_guard<recursive_mutex>		lock(_propLock);
-	
-	for (const auto & targetBufIt : _persistentPassTargets)	{
-		//cout << "\tchecking persistent buffer named \"" << targetBufIt->name() << "\"" << endl;
-		if (targetBufIt->name() == n)	{
-			//cout << "\tmatch found! returning " << targetBufIt << endl;
-			return targetBufIt;
-		}
+	for (const ISFPassTargetRef & tmpPassRef : _renderPasses)	{
+		ISFPassTarget		*tmpPassPtr = tmpPassRef.get();
+		if (tmpPassPtr == nullptr)
+			continue;
+		if (!tmpPassPtr->persistentFlag())
+			continue;
+		if (tmpPassPtr->name() == n)
+			return tmpPassRef;
 	}
 	return nullptr;
 }
 const ISFPassTargetRef ISFDoc::tempPassTargetForKey(const string & n)	{
 	//cout << __PRETTY_FUNCTION__ << ", key is \"" << n << "\"" << endl;
 	lock_guard<recursive_mutex>		lock(_propLock);
-	
-	for (const auto & targetBufIt : _tempPassTargets)	{
-		//cout << "\tchecking temp buffer named \"" << targetBufIt->name() << "\"" << endl;
-		if (targetBufIt->name() == n)	{
-			//cout << "\tmatch found! returning " << targetBufIt << endl;
-			return targetBufIt;
-		}
+	for (const ISFPassTargetRef & tmpPassRef : _renderPasses)	{
+		ISFPassTarget		*tmpPassPtr = tmpPassRef.get();
+		if (tmpPassPtr == nullptr)
+			continue;
+		if (tmpPassPtr->persistentFlag())
+			continue;
+		if (tmpPassPtr->name() == n)
+			return tmpPassRef;
 	}
 	return nullptr;
 }
@@ -290,7 +248,7 @@ string ISFDoc::generateTextureTypeString()	{
 		if (attribRefIt == nullptr)
 			continue;
 		if (attribRefIt->shouldHaveImageBuffer())	{
-			ISFImageRef		tmpBuffer = attribRefIt->getCurrentImageRef();
+			ISFImageInfoRef		tmpBuffer = attribRefIt->getCurrentImageRef();
 			if (tmpBuffer == nullptr || !tmpBuffer->cubemap)
 				returnMe.append("R");
 			else
@@ -301,7 +259,7 @@ string ISFDoc::generateTextureTypeString()	{
 		if (attribRefIt == nullptr)
 			continue;
 		if (attribRefIt->shouldHaveImageBuffer())	{
-			ISFImageRef		tmpBuffer = attribRefIt->getCurrentImageRef();
+			ISFImageInfoRef		tmpBuffer = attribRefIt->getCurrentImageRef();
 			if (tmpBuffer == nullptr || !tmpBuffer->cubemap)
 				returnMe.append("R");
 			else
@@ -312,34 +270,27 @@ string ISFDoc::generateTextureTypeString()	{
 		if (attribRefIt == nullptr)
 			continue;
 		if (attribRefIt->shouldHaveImageBuffer())	{
-			ISFImageRef		tmpBuffer = attribRefIt->getCurrentImageRef();
+			ISFImageInfoRef		tmpBuffer = attribRefIt->getCurrentImageRef();
 			if (tmpBuffer == nullptr || !tmpBuffer->cubemap)
 				returnMe.append("R");
 			else
 				returnMe.append("C");
 		}
 	}
-	for (const auto & targetBufIt : _persistentPassTargets)	{
-		if (targetBufIt == nullptr)
+	for (const auto & tmpPassRef : _renderPasses)	{
+		if (tmpPassRef == nullptr)
 			continue;
-		ISFImageRef		tmpBuffer = targetBufIt->image();
-		if (tmpBuffer == nullptr || !tmpBuffer->cubemap)
-			returnMe.append("R");
-		else
-			returnMe.append("C");
-	}
-	for (const auto & targetBufIt : _tempPassTargets)	{
-		if (targetBufIt == nullptr)
-			continue;
-		ISFImageRef		tmpBuffer = targetBufIt->image();
-		if (tmpBuffer == nullptr || !tmpBuffer->cubemap)
-			returnMe.append("R");
-		else
-			returnMe.append("C");
+		if (tmpPassRef->persistentFlag() || tmpPassRef->name().length()>0)	{
+			ISFImageInfoRef		tmpBuffer = tmpPassRef->image();
+			if (tmpBuffer == nullptr || !tmpBuffer->cubemap)
+				returnMe.append("R");
+			else
+				returnMe.append("C");
+		}
 	}
 	return returnMe;
 }
-bool ISFDoc::generateShaderSource(string * outFragSrc, string * outVertSrc, const GLVersion & inGLVers, const bool & inVarsAsUBO)	{
+bool ISFDoc::generateShaderSource(string * outFragSrc, string * outVertSrc, const GLVersion & inGLVers, const bool & inVarsAsUBO, size_t * outUBOSize)	{
 	//cout << __PRETTY_FUNCTION__ << ", vers is " << inGLVers << endl;
 	lock_guard<recursive_mutex>		lock(_propLock);
 	
@@ -352,7 +303,7 @@ bool ISFDoc::generateShaderSource(string * outFragSrc, string * outVertSrc, cons
 	//	assemble the variable declarations
 	string		vsVarDeclarations = string("");
 	string		fsVarDeclarations = string("");
-	if (!_assembleShaderSource_VarDeclarations(&vsVarDeclarations, &fsVarDeclarations, inGLVers, inVarsAsUBO))	{
+	if (!_assembleShaderSource_VarDeclarations(&vsVarDeclarations, &fsVarDeclarations, inGLVers, inVarsAsUBO, outUBOSize))	{
 		if (_throwExcept)
 			throw ISFErr(ISFErrType_ErrorParsingFS, "Var Dec failed", __PRETTY_FUNCTION__);
 		else
@@ -1089,13 +1040,8 @@ void ISFDoc::evalBufferDimensionsWithRenderSize(const int & inWidth, const int &
 		return;
 	*/
 	
-	//	make sure that the persistent buffers are sized appropriately
-	for (const auto & targetBufIt : _persistentPassTargets)	{
-		targetBufIt->evalTargetSize(inWidth, inHeight, subDict, true, true);
-	}
-	//	make sure that the temp buffers are sized appropriately
-	for (const auto & targetBufIt : _tempPassTargets)	{
-		targetBufIt->evalTargetSize(inWidth, inHeight, subDict, true, true);
+	for (const auto & targetPassIt : _renderPasses)	{
+		targetPassIt->evalTargetSize(inWidth, inHeight, subDict);
 	}
 	
 	//cout << "\t" << __FUNCTION__ << "- FINISHED\n";
@@ -1233,7 +1179,8 @@ void ISFDoc::_initWithRawFragShaderString(const string & inRawFile)	{
 			//for (auto const & it : anObj)	{
 			for (auto & it : anObj)	{
 				if (it.type() == json::value_t::string)	{
-					_persistentPassTargets.emplace_back(ISFPassTarget::Create(it.get<string>(), this));
+					ISFPassTargetRef		tmpPass = ISFPassTarget::Create(it.get<string>(), this);
+					_renderPasses.push_back( tmpPass );
 				}
 			}
 		}
@@ -1322,7 +1269,7 @@ void ISFDoc::_initWithRawFragShaderString(const string & inRawFile)	{
 					//	don't forget to flag it as a persistent buffer!
 					newTargetBuffer->setPersistentFlag(true);
 					//	add the new persistent buffer (as a render pass) to the array of render passes
-					_persistentPassTargets.push_back(newTargetBuffer);
+					_renderPasses.push_back(newTargetBuffer);
 				}
 			}
 		}
@@ -1344,7 +1291,7 @@ void ISFDoc::_initWithRawFragShaderString(const string & inRawFile)	{
 				if (!cubeFlagJ.is_null() && cubeFlagJ.get<string>() != "cube")
 					cubeFlagJ = json();
 				
-				ISFImageRef		importedBuffer = nullptr;
+				ISFImageInfoRef		importedBuffer = nullptr;
 				
 				//	are we a cube map?
 				if (!cubeFlagJ.is_null())	{
@@ -1377,8 +1324,8 @@ void ISFDoc::_initWithRawFragShaderString(const string & inRawFile)	{
 						}
 						//	make a cube texture from the array of paths
 						uint32_t		max_size = std::numeric_limits<uint32_t>::max();
-						//importedBuffer = make_shared<ISFImage>(std::numeric_limits<uint32_t>::max(), &fullPaths);
-						importedBuffer = make_shared<ISFImage>(max_size, fullPaths);
+						//importedBuffer = make_shared<ISFImageInfo>(std::numeric_limits<uint32_t>::max(), &fullPaths);
+						importedBuffer = make_shared<ISFImageInfo>(max_size, fullPaths);
 						if (importedBuffer == nullptr)	{
 							if (_throwExcept)	{
 								if (_path != nullptr)
@@ -1423,8 +1370,8 @@ void ISFDoc::_initWithRawFragShaderString(const string & inRawFile)	{
 						//	get the full path to the image we need to import
 						string			fullPath = FmtString("%s/%s", parentDirectory.c_str(), partialPathJ.get<string>().c_str());
 						uint32_t		max_size = std::numeric_limits<uint32_t>::max();
-						//importedBuffer = make_shared<ISFImage>(std::numeric_limits<uint32_t>::max(), std::numeric_limits<uint32_t>::max(), &fullPath);
-						importedBuffer = make_shared<ISFImage>(max_size, max_size, fullPath);
+						//importedBuffer = make_shared<ISFImageInfo>(std::numeric_limits<uint32_t>::max(), std::numeric_limits<uint32_t>::max(), &fullPath);
+						importedBuffer = make_shared<ISFImageInfo>(max_size, max_size, fullPath);
 						if (importedBuffer == nullptr)	{
 							if (_throwExcept)
 								throw ISFErr(ISFErrType_ErrorLoading, "IMPORTED file cannot be loaded: ", fullPath);
@@ -1491,142 +1438,150 @@ void ISFDoc::_initWithRawFragShaderString(const string & inRawFile)	{
 		else	{
 			for (auto passIt = anObj.begin(); passIt != anObj.end(); ++passIt)	{
 				json		rawPassDict = passIt.value();
+				
 				//	make a new render pass and populate it from the raw pass dict
-				//ISFRenderPass			newPass = ISFRenderPass();
 				json				passTarget = rawPassDict.value("TARGET",json());
+				ISFPassTargetRef	passRef = nullptr;
 				if (passTarget.is_string())	{
 					string				tmpBufferName = passTarget.get<string>();
-					//newPass.targetName = tmpBufferName;
-					//newPass.setTargetName(tmpBufferName);
-					//	find the target buffer for this pass- first check the persistent buffers
-					ISFPassTargetRef		targetBuffer = persistentPassTargetForKey(tmpBufferName);
+					//	try to find a pass that we've already created for this name...
+					passRef = passTargetForKey(tmpBufferName);
 					//	if i couldn't find a persistent buffer...
-					if (targetBuffer == nullptr)	{
+					if (passRef == nullptr)	{
 						//	create a new target buffer, set its name
-						targetBuffer = ISFPassTarget::Create(tmpBufferName, this);
-						//	check for PERSISTENT flag as per the ISF 2.0 spec
-						json				persistentObj = rawPassDict.value("PERSISTENT",json());
-						ISFVal				persistentVal = CreateISFValNull();
-						if (persistentObj.is_string())	{
-							persistentVal = ParseStringAsBool(persistentObj);
-							//if (persistentVal.type() == ISFValType_None)
-								//persistentVal = ISFValByEvaluatingString(persistentObj);
-						}
-						else if (persistentObj.is_boolean())
-							persistentVal = CreateISFValBool(persistentObj.get<bool>());
-						else if (persistentObj.is_number())
-							persistentVal = CreateISFValFloat(persistentObj.get<double>());
-						//	if there's a valid PERSISTENT flag and it's indicating positive, add the new target buffer as a persistent buffer
-						if (persistentVal.getDoubleVal() > 0.)	{
-							_persistentPassTargets.push_back(targetBuffer);
-							targetBuffer->setPersistentFlag(true);
-						}
-						//	else there's no PERSISTENT flag (or a negative flag) - add the new target buffer as a temporary buffer
-						else	{
-							_tempPassTargets.push_back(targetBuffer);
-							targetBuffer->setPersistentFlag(false);
-						}
+						passRef = ISFPassTarget::Create(tmpBufferName, this);
 					}
-				
-					//	update the width/height stuff for the target buffer
-					json		tmpObj;
-					tmpObj = rawPassDict.value("WIDTH",json());
-					if (tmpObj != nullptr)	{
-						switch (tmpObj.type())	{
-						case json::value_t::null:
-						case json::value_t::object:
-						case json::value_t::array:
-						case json::value_t::boolean:
-						case json::value_t::discarded:
-						case json::value_t::string:
-							{
-							string			tmpString = tmpObj.get<string>();
-							FindAndReplaceInPlace("$", "", tmpString);
-							targetBuffer->setTargetWidthString(tmpString);
-							}
-							break;
-						case json::value_t::number_integer:
-							{
-							int				tmpVal = tmpObj.get<int>();
-							targetBuffer->setTargetWidthString(FmtString("%d",tmpVal));
-							}
-							break;
-						case json::value_t::number_unsigned:
-							{
-							unsigned long	tmpVal = tmpObj.get<unsigned long>();
-							targetBuffer->setTargetWidthString(FmtString("%ld",tmpVal));
-							}
-							break;
-						case json::value_t::number_float:
-							{
-							double			tmpVal = tmpObj.get<float>();
-							targetBuffer->setTargetWidthString(FmtString("%f",tmpVal));
-							}
-							break;
-						}
-					}
-					tmpObj = rawPassDict.value("HEIGHT",json());
-					if (tmpObj != nullptr)	{
-						switch (tmpObj.type())	{
-						case json::value_t::null:
-						case json::value_t::object:
-						case json::value_t::array:
-						case json::value_t::boolean:
-						case json::value_t::discarded:
-						case json::value_t::string:
-							{
-							string			tmpString = tmpObj.get<string>();
-							FindAndReplaceInPlace("$", "", tmpString);
-							targetBuffer->setTargetHeightString(tmpString);
-							}
-							break;
-						case json::value_t::number_integer:
-							{
-							int				tmpVal = tmpObj.get<int>();
-							targetBuffer->setTargetHeightString(FmtString("%d",tmpVal));
-							}
-							break;
-						case json::value_t::number_unsigned:
-							{
-							unsigned long	tmpVal = tmpObj.get<unsigned long>();
-							targetBuffer->setTargetHeightString(FmtString("%ld",tmpVal));
-							}
-							break;
-						case json::value_t::number_float:
-							{
-							double			tmpVal = tmpObj.get<float>();
-							targetBuffer->setTargetHeightString(FmtString("%f",tmpVal));
-							}
-							break;
-						}
-					}
-				
-					//	update the float flag for the target buffer
-					json		tmpFloatFlag = rawPassDict.value("FLOAT",json());
-					ISFVal		tmpFloatVal = CreateISFValNull();
-					if (tmpFloatFlag.is_string())	{
-						tmpFloatVal = ParseStringAsBool(tmpFloatFlag);
-						//if (tmpFloatVal.type() == ISFValType_None)
-							//tmpFloatVal = ISFValByEvaluatingString(tmpFloatFlag);
-					}
-					else if (tmpFloatFlag.is_boolean())
-						tmpFloatVal = CreateISFValBool(tmpFloatFlag.get<bool>());
-					else if (tmpFloatFlag.is_number())
-						tmpFloatVal = CreateISFValBool( (tmpFloatFlag.get<double>()>0.) ? true : false );
-					targetBuffer->setFloatFlag( (tmpFloatVal.getDoubleVal()>0.) ? true : false );
-					//	add the new render pass to the array of render passes
-					_renderPasses.emplace_back(tmpBufferName);
 				}
 				else	{
 					//	add an empty render pass to the array of render passes
-					_renderPasses.emplace_back("");
+					//_renderPasses.emplace_back("");
+					passRef = ISFPassTarget::Create("", this);
+				}
+				
+				//	check for PERSISTENT flag as per the ISF 2.0 spec
+				json				persistentObj = rawPassDict.value("PERSISTENT",json());
+				ISFVal				persistentVal = CreateISFValNull();
+				if (persistentObj.is_string())	{
+					persistentVal = ParseStringAsBool(persistentObj);
+					//if (persistentVal.type() == ISFValType_None)
+						//persistentVal = ISFValByEvaluatingString(persistentObj);
+				}
+				else if (persistentObj.is_boolean())
+					persistentVal = CreateISFValBool(persistentObj.get<bool>());
+				else if (persistentObj.is_number())
+					persistentVal = CreateISFValFloat(persistentObj.get<double>());
+				//	if there's a valid PERSISTENT flag and it's indicating positive, add the new target buffer as a persistent buffer
+				if (persistentVal.getDoubleVal() > 0.)	{
+					passRef->setPersistentFlag(true);
+				}
+				//	else there's no PERSISTENT flag (or a negative flag) - add the new target buffer as a temporary buffer
+				else	{
+					passRef->setPersistentFlag(false);
+				}
+				
+				//	update the width/height stuff for the target buffer
+				json		tmpObj;
+				tmpObj = rawPassDict.value("WIDTH",json());
+				if (tmpObj != nullptr)	{
+					switch (tmpObj.type())	{
+					case json::value_t::null:
+					case json::value_t::object:
+					case json::value_t::array:
+					case json::value_t::boolean:
+					case json::value_t::discarded:
+					case json::value_t::string:
+						{
+						string			tmpString = tmpObj.get<string>();
+						FindAndReplaceInPlace("$", "", tmpString);
+						passRef->setTargetWidthString(tmpString);
+						}
+						break;
+					case json::value_t::number_integer:
+						{
+						int				tmpVal = tmpObj.get<int>();
+						passRef->setTargetWidthString(FmtString("%d",tmpVal));
+						}
+						break;
+					case json::value_t::number_unsigned:
+						{
+						unsigned long	tmpVal = tmpObj.get<unsigned long>();
+						passRef->setTargetWidthString(FmtString("%ld",tmpVal));
+						}
+						break;
+					case json::value_t::number_float:
+						{
+						double			tmpVal = tmpObj.get<float>();
+						passRef->setTargetWidthString(FmtString("%f",tmpVal));
+						}
+						break;
+					}
+				}
+				
+				tmpObj = rawPassDict.value("HEIGHT",json());
+				if (tmpObj != nullptr)	{
+					switch (tmpObj.type())	{
+					case json::value_t::null:
+					case json::value_t::object:
+					case json::value_t::array:
+					case json::value_t::boolean:
+					case json::value_t::discarded:
+					case json::value_t::string:
+						{
+						string			tmpString = tmpObj.get<string>();
+						FindAndReplaceInPlace("$", "", tmpString);
+						passRef->setTargetHeightString(tmpString);
+						}
+						break;
+					case json::value_t::number_integer:
+						{
+						int				tmpVal = tmpObj.get<int>();
+						passRef->setTargetHeightString(FmtString("%d",tmpVal));
+						}
+						break;
+					case json::value_t::number_unsigned:
+						{
+						unsigned long	tmpVal = tmpObj.get<unsigned long>();
+						passRef->setTargetHeightString(FmtString("%ld",tmpVal));
+						}
+						break;
+					case json::value_t::number_float:
+						{
+						double			tmpVal = tmpObj.get<float>();
+						passRef->setTargetHeightString(FmtString("%f",tmpVal));
+						}
+						break;
+					}
+				}
+			
+				//	update the float flag for the target buffer
+				json		tmpFloatFlag = rawPassDict.value("FLOAT",json());
+				ISFVal		tmpFloatVal = CreateISFValNull();
+				if (tmpFloatFlag.is_string())	{
+					tmpFloatVal = ParseStringAsBool(tmpFloatFlag);
+					//if (tmpFloatVal.type() == ISFValType_None)
+						//tmpFloatVal = ISFValByEvaluatingString(tmpFloatFlag);
+				}
+				else if (tmpFloatFlag.is_boolean())
+					tmpFloatVal = CreateISFValBool(tmpFloatFlag.get<bool>());
+				else if (tmpFloatFlag.is_number())
+					tmpFloatVal = CreateISFValBool( (tmpFloatFlag.get<double>()>0.) ? true : false );
+				passRef->setFloatFlag( (tmpFloatVal.getDoubleVal()>0.) ? true : false );
+				//	add the new render pass to the array of render passes
+				//_renderPasses.emplace_back(tmpBufferName);
+				
+				
+				if (passRef != nullptr)	{
+					_renderPasses.push_back(passRef);
 				}
 			}
 		}
 	}
+	
 	//	if at this point there aren't any passes, add an empty pass
-	if (_renderPasses.size() < 1)
-		_renderPasses.emplace_back("");
+	if (_renderPasses.size() < 1)	{
+		//_renderPasses.emplace_back("");
+		_renderPasses.emplace_back( ISFPassTarget::Create("", this) );
+	}
 	
 	//	parse the INPUTS from the JSON dict (these form the basis of user interaction)
 	auto			inputsArray = (caughtJSONException) ? json() : jblob.value("INPUTS",json());
@@ -2016,7 +1971,8 @@ void ISFDoc::_initWithRawFragShaderString(const string & inRawFile)	{
 			_type = ISFFileType_Transition;
 	}
 }
-bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string * outFSString, const GLVersion & inGLVers, const bool & inVarsAsUBO)	{
+bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string * outFSString, const GLVersion & inGLVers, const bool & inVarsAsUBO, size_t * outUBOSize)	{
+	cout << __PRETTY_FUNCTION__ << endl;
 	lock_guard<recursive_mutex>		lock(_propLock);
 	
 	if (outVSString==nullptr || outFSString==nullptr)
@@ -2027,7 +1983,13 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 	vector<string>		fsDeclarations;
 	vector<string>		uboDeclarations;
 	
-	vsDeclarations.reserve(_inputs.size()+_imageImports.size()+_persistentPassTargets.size()+_tempPassTargets.size()+9);
+	int			namedRenderPassCount = 0;
+	for (const auto & renderPass : _renderPasses)	{
+		if (renderPass->persistentFlag() || renderPass->name().length() > 0)
+			++namedRenderPassCount;
+	}
+	
+	vsDeclarations.reserve( _inputs.size() + _imageImports.size() + namedRenderPassCount + 9);
 	fsDeclarations.reserve(vsDeclarations.capacity());
 	uboDeclarations.reserve(vsDeclarations.capacity());
 	
@@ -2098,6 +2060,7 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 	}
 	
 	//	this block will be used to add declarations for a provided ISFAttr
+	uint32_t		cumulativeBufferOffset = 0;
 	auto	attribDecBlock = [&](const ISFAttrRef & inRef)	{
 		const string &		name = inRef->name();
 		const char *		nameCStr = name.c_str();
@@ -2113,6 +2076,8 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 			else	{
 				uboDeclarations.emplace_back(FmtString("\tbool\t\t%s;\n", nameCStr));
 			}
+			inRef->setOffsetInBuffer(cumulativeBufferOffset);
+			cumulativeBufferOffset += sizeof(uint);
 			break;
 		case ISFValType_Long:
 			if (!inVarsAsUBO)	{
@@ -2122,6 +2087,8 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 			else	{
 				uboDeclarations.emplace_back(FmtString("\tint\t\t%s;\n", nameCStr));
 			}
+			inRef->setOffsetInBuffer(cumulativeBufferOffset);
+			cumulativeBufferOffset += sizeof(int);
 			break;
 		case ISFValType_Float:
 			if (!inVarsAsUBO)	{
@@ -2131,6 +2098,8 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 			else	{
 				uboDeclarations.emplace_back(FmtString("\tfloat\t\t%s;\n", nameCStr));
 			}
+			inRef->setOffsetInBuffer(cumulativeBufferOffset);
+			cumulativeBufferOffset += sizeof(float);
 			break;
 		case ISFValType_Point2D:
 			if (!inVarsAsUBO)	{
@@ -2140,6 +2109,8 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 			else	{
 				uboDeclarations.emplace_back(FmtString("\tvec2\t\t%s;\n", nameCStr));
 			}
+			inRef->setOffsetInBuffer(cumulativeBufferOffset);
+			cumulativeBufferOffset += (sizeof(float) * 2);
 			break;
 		case ISFValType_Color:
 			if (!inVarsAsUBO)	{
@@ -2149,6 +2120,8 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 			else	{
 				uboDeclarations.emplace_back(FmtString("\tvec4\t\t%s;\n", nameCStr));
 			}
+			inRef->setOffsetInBuffer(cumulativeBufferOffset);
+			cumulativeBufferOffset += (sizeof(float) * 4);
 			break;
 		case ISFValType_Cube:
 			//	make a sampler for the cubemap texture
@@ -2162,13 +2135,16 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 			else	{
 				uboDeclarations.emplace_back(FmtString("\tvec2\t\t_%s_imgSize;\n", nameCStr));
 			}
+			//	update the relative offset into the buffer passed to the shader at which this value is stored
+			inRef->setOffsetInBuffer(cumulativeBufferOffset);
+			cumulativeBufferOffset += sizeof(ISFShaderCubeInfo);
 			break;
 		case ISFValType_Image:
 		case ISFValType_Audio:
 		case ISFValType_AudioFFT:
 			{
 				ISFVal			attribVal = inRef->currentVal();
-				ISFImageRef	attribBuffer = attribVal.getImageRef();
+				ISFImageInfoRef	attribBuffer = attribVal.getImageRef();
 				vsDeclarations.emplace_back(FmtString("uniform sampler2D\t\t%s;\n", nameCStr));
 				fsDeclarations.emplace_back(FmtString("uniform sampler2D\t\t%s;\n", nameCStr));
 				//	a vec4 describing the image rect IN NATIVE GL TEXTURE COORDS (2D is normalized, RECT is not)
@@ -2195,6 +2171,9 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 				else	{
 					uboDeclarations.emplace_back(FmtString("\tbool\t\t_%s_flip;\n", nameCStr));
 				}
+				//	update the relative offset into the buffer passed to the shader at which this value is stored
+				inRef->setOffsetInBuffer(cumulativeBufferOffset);
+				cumulativeBufferOffset += sizeof(ISFShaderImgInfo);
 				break;
 			}
 		}
@@ -2204,7 +2183,7 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 	auto		targetBufferBlock = [&](const ISFPassTargetRef & inRef)	{
 		const string &		name = inRef->name();
 		const char *		nameCStr = name.c_str();
-		//ISFImageRef			bufferRef = inRef->image();
+		//ISFImageInfoRef			bufferRef = inRef->image();
 		vsDeclarations.emplace_back(FmtString("uniform sampler2D\t\t%s;\n", nameCStr));
 		fsDeclarations.emplace_back(FmtString("uniform sampler2D\t\t%s;\n", nameCStr));
 		if (!inVarsAsUBO)	{
@@ -2220,6 +2199,9 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 			uboDeclarations.emplace_back(FmtString("\tvec2\t\t_%s_imgSize;\n", nameCStr));
 			uboDeclarations.emplace_back(FmtString("\tbool\t\t_%s_flip;\n", nameCStr));
 		}
+		//	update the relative offset into the buffer passed to the shader at which this value is stored
+		inRef->setOffsetInBuffer(cumulativeBufferOffset);
+		cumulativeBufferOffset += sizeof(ISFShaderImgInfo);
 	};
 	
 	//	add the variables for the various inputs
@@ -2228,12 +2210,11 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 	//	add the variables for the imported buffers
 	for (const auto & attrIt : _imageImports)
 		attribDecBlock(attrIt);
-	//	add the variables for the persistent buffers
-	for (const auto & tgBufIt : _persistentPassTargets)
-		targetBufferBlock(tgBufIt);
-	//	add the variables for the temp buffers
-	for (const auto & tgBufIt : _tempPassTargets)
-		targetBufferBlock(tgBufIt);
+	//	add the variables for the render passes
+	for (const auto & tmpPassRef : _renderPasses)	{
+		if (tmpPassRef->persistentFlag() || tmpPassRef->name().length() > 0)
+			targetBufferBlock(tmpPassRef);
+	}
 	/*
 	cout << "VS declarations are:\n";
 	for (const auto & stringIt : vsDeclarations)	{
@@ -2275,6 +2256,11 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 		}
 		outVSString->append(varsAsUBOFooter);
 		outFSString->append(varsAsUBOFooter);
+	}
+	
+	//	pass the cumulative buffer offset- which is the total size in bytes of the structure of data we need to pass to the ISF shader- back out via the ptr passed to the function
+	if (outUBOSize != nullptr)	{
+		*outUBOSize = sizeof(ISFShaderRenderInfo) + cumulativeBufferOffset;
 	}
 	
 	return true;
@@ -2341,48 +2327,39 @@ ostream & operator<<(ostream & os, const ISFDoc & n)	{
 			os << endl;
 		}
 	}
-
-	const vector<ISFPassTargetRef> 	tmpPersistent = const_cast<ISFDoc*>(&n)->persistentPassTargets();
-	if (tmpPersistent.size() > 0)	{
-		os << "\tdoc has " << tmpPersistent.size() << " persistent buffers\n";
-		for (const auto & it : tmpPersistent)	{
-			const std::string		tmpWidth = it->targetWidthString();
-			const std::string		tmpHeight = it->targetHeightString();
-			os << "\t\t" << it->name();
-			if (tmpWidth.size() > 0)
-				os << ", " << tmpWidth;
-			if (tmpHeight.size() > 0)
-				os << ", " << tmpHeight;
-			if (it->floatFlag())
-				os << ", is a FLOAT tex";
-			os << endl;
-		}
-	}
 	
-	const vector<ISFPassTargetRef> 	tmpTemp = const_cast<ISFDoc*>(&n)->tempPassTargets();
-	if (tmpTemp.size() > 0)	{
-		os << "\tdoc has " << tmpTemp.size() << " temp buffers\n";
-		for (const auto & it : tmpTemp)	{
-			const std::string		tmpWidth = it->targetWidthString();
-			const std::string		tmpHeight = it->targetHeightString();
-			os << "\t\t" << it->name();
-			if (tmpWidth.size() > 0)
-				os << ", " << tmpWidth;
-			if (tmpHeight.size() > 0)
-				os << ", " << tmpHeight;
-			if (it->floatFlag())
-				os << ", is a FLOAT tex";
-			os << endl;
-		}
-	}
-	
-	vector<string> &		tmpPasses = const_cast<ISFDoc*>(&n)->renderPasses();
+	const vector<ISFPassTargetRef> 	tmpPasses = const_cast<ISFDoc*>(&n)->renderPasses();
 	if (tmpPasses.size() > 0)	{
-		os << "\tdoc has " << tmpPasses.size() << " render passes\n";
-		for (auto it=tmpPasses.begin(); it!=tmpPasses.end(); ++it)
-			os << "\t\tpass name: " << *it << endl;
+		os << "\tdoc has " << tmpPasses.size() << " render passes:\n";
+		int			tmpInt = 0;
+		for (const auto & tmpPass : tmpPasses)	{
+			os << "\t\tpass " << tmpInt;
+			
+			const std::string		tmpName = tmpPass->name();
+			bool			hasName = (tmpName.size()>0);
+			if (hasName)
+				os << " named " << tmpName;
+			
+			std::string		tmpWidth { tmpPass->targetWidthString() };
+			std::string		tmpHeight { tmpPass->targetHeightString() };
+			bool			hasWidthOrHeight = (tmpWidth.size()>0 || tmpHeight.size()>0);
+			if (hasWidthOrHeight)	{
+				if (tmpWidth.size() < 1)
+					tmpWidth = "<unspecified>";
+				if (tmpHeight.size() < 1)
+					tmpHeight = "<unspecified>";
+				os << ", " << tmpWidth << " x " << tmpHeight;
+			}
+			
+			if (tmpPass->persistentFlag())
+				os << ", persistent";
+			if (tmpPass->floatFlag())
+				os << ", float";
+			
+			os << endl;
+		}
 	}
-
+	
 	vector<ISFAttrRef> &		tmpInputs = const_cast<ISFDoc*>(&n)->inputs();
 	if (tmpInputs.size() > 0)	{
 		os << "\tdoc has " << tmpInputs.size() << " inputs\n";
