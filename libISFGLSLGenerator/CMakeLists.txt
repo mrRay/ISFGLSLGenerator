@@ -7,7 +7,7 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS True)
 #add_compile_options ("-Wall")
 add_compile_options ("-v")
 
-add_library(ISFGLSLGenerator STATIC
+add_library(ISFGLSLGenerator SHARED
 	${CMAKE_CURRENT_SOURCE_DIR}/src/ISFAttr.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/ISFDoc.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/ISFPassTarget.cpp
@@ -15,6 +15,10 @@ add_library(ISFGLSLGenerator STATIC
 	${CMAKE_CURRENT_SOURCE_DIR}/src/VVISF_Base.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/VVISF_StringUtils.cpp
 )
+
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH YES)
+set_target_properties(ISFGLSLGenerator PROPERTIES INSTALL_RPATH @loader_path/../Frameworks/)
 
 #target_include_directories(ISFGLSLGenerator PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
