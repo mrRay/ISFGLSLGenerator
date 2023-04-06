@@ -2008,17 +2008,7 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 		break;
 	}
 	
-	//	these are the 9 standard entries
-	if (!inVarsAsUBO)	{
-		vsDeclarations.emplace_back("uniform int\t\tPASSINDEX;\n");
-		fsDeclarations.emplace_back("uniform int\t\tPASSINDEX;\n");
-		vsDeclarations.emplace_back("uniform vec2\t\tRENDERSIZE;\n");
-		fsDeclarations.emplace_back("uniform vec2\t\tRENDERSIZE;\n");
-	}
-	else	{
-		uboDeclarations.emplace_back("\tint\t\tPASSINDEX;\n");
-		uboDeclarations.emplace_back("\tvec2\t\tRENDERSIZE;\n");
-	}
+	//	add the normalized frag coords
 	switch (inGLVers)	{
 	case GLVersion_Unknown:
 	case GLVersion_2:
@@ -2042,20 +2032,28 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 		//fsDeclarations.emplace_back("in vec3\t\tisf_VertPos;\n");
 		break;
 	}
+	
+	//	these are the 6 standard entries, constituting an 'ISFShaderRenderInfo' struct
 	if (!inVarsAsUBO)	{
+		vsDeclarations.emplace_back("uniform int\t\tPASSINDEX;\n");
+		fsDeclarations.emplace_back("uniform int\t\tPASSINDEX;\n");
 		vsDeclarations.emplace_back("uniform float\t\tTIME;\n");
 		fsDeclarations.emplace_back("uniform float\t\tTIME;\n");
-		vsDeclarations.emplace_back("uniform float\t\tTIMEDELTA;\n");
-		fsDeclarations.emplace_back("uniform float\t\tTIMEDELTA;\n");
+		vsDeclarations.emplace_back("uniform vec2\t\tRENDERSIZE;\n");
+		fsDeclarations.emplace_back("uniform vec2\t\tRENDERSIZE;\n");
 		vsDeclarations.emplace_back("uniform vec4\t\tDATE;\n");
 		fsDeclarations.emplace_back("uniform vec4\t\tDATE;\n");
+		vsDeclarations.emplace_back("uniform float\t\tTIMEDELTA;\n");
+		fsDeclarations.emplace_back("uniform float\t\tTIMEDELTA;\n");
 		vsDeclarations.emplace_back("uniform int\t\tFRAMEINDEX;\n");
 		fsDeclarations.emplace_back("uniform int\t\tFRAMEINDEX;\n");
 	}
 	else	{
+		uboDeclarations.emplace_back("\tint\t\tPASSINDEX;\n");
 		uboDeclarations.emplace_back("\tfloat\t\tTIME;\n");
-		uboDeclarations.emplace_back("\tfloat\t\tTIMEDELTA;\n");
+		uboDeclarations.emplace_back("\tvec2\t\tRENDERSIZE;\n");
 		uboDeclarations.emplace_back("\tvec4\t\tDATE;\n");
+		uboDeclarations.emplace_back("\tfloat\t\tTIMEDELTA;\n");
 		uboDeclarations.emplace_back("\tint\t\tFRAMEINDEX;\n");
 	}
 	

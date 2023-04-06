@@ -80,13 +80,13 @@ std::string ISFFileTypeString(const ISFFileType & n);
 
 //	we pass a buffer of data to the vertex + frag shaders that contains info describing the rendering state and param values
 //	this struct (ISFShaderRenderInfo) is the first piece of information in the buffer, it's sort of like a header
-struct ISFShaderRenderInfo	{
-	int				PASSINDEX;
-	float			RENDERSIZE[2];
-	float			TIME;
-	float			TIMEDELTA;
-	float			DATE[4];
-	uint32_t		FRAMEINDEX;
+struct ISFShaderRenderInfo	{		//	starts at offset...
+	uint32_t		PASSINDEX;		//	0
+	float			TIME;			//	4
+	float			RENDERSIZE[2];	//	8
+	float			DATE[4];		//	16
+	float			TIMEDELTA;		//	32
+	uint32_t		FRAMEINDEX;		//	36
 };
 //	this struct describes a cube texture by describing its dimensions, and may be present in the buffer of data passed to vertex + frag shaders
 struct ISFShaderCubeInfo	{
