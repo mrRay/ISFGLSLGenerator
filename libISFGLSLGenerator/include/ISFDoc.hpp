@@ -38,10 +38,13 @@ class ISFDoc	{
 		bool			_throwExcept = true;
 		
 		std::vector<std::string>	_categories;	//	array of strings of the category names this doc should be listed under
+		std::vector<ISFAttrRef>		_imageImports;	//	array of ISFAttrRef instances that describe imported images. attrib's 'attribName' is the name of the sampler, attrib's 'description' is the path to the file.
 		std::vector<ISFAttrRef>		_inputs;	//	array of ISFAttrRef instances for the various inputs
 		std::vector<ISFAttrRef>		_imageInputs;	//	array of ISFAttrRef instances for the image inputs (the image inputs are stored in two arrays).
 		std::vector<ISFAttrRef>		_audioInputs;	//	array of ISFAttrRef instances for the audio inputs (the audio inputs are stored in two arrays)
-		std::vector<ISFAttrRef>		_imageImports;	//	array of ISFAttrRef instances that describe imported images. attrib's 'attribName' is the name of the sampler, attrib's 'description' is the path to the file.
+		std::vector<ISFAttrRef>		_cubeInputs;
+		std::vector<ISFAttrRef>		_colorInputs;	//	array of ISFAttrRef instances that describe color inputs.  separate array because we have to declare attrs types in a specific order to ensure the variables are all aligned.
+		std::vector<ISFAttrRef>		_pointInputs;	//	array of ISFAttrRef instances that describe point inputs.  separate array because we have to declare attrs types in a specific order to ensure the variables are all aligned.
 		
 		//bool					bufferRequiresEval = false;	//	NO by default, set to YES during file open if any of the buffers require evaluation (faster than checking every single buffer every pass)
 		//std::vector<std::string>		_renderPasses;

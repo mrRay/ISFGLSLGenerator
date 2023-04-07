@@ -80,23 +80,32 @@ std::string ISFFileTypeString(const ISFFileType & n);
 
 //	we pass a buffer of data to the vertex + frag shaders that contains info describing the rendering state and param values
 //	this struct (ISFShaderRenderInfo) is the first piece of information in the buffer, it's sort of like a header
-struct ISFShaderRenderInfo	{		//	starts at offset...
-	uint32_t		PASSINDEX;		//	0
-	float			TIME;			//	4
-	float			RENDERSIZE[2];	//	8
-	float			DATE[4];		//	16
-	float			TIMEDELTA;		//	32
-	uint32_t		FRAMEINDEX;		//	36
+struct ISFShaderRenderInfo	{				//	starts at offset...
+	uint32_t		PASSINDEX;				//	0
+	float			TIME;					//	4
+	float			RENDERSIZE[2];			//	8
+	float			DATE[4];				//	16
+	float			TIMEDELTA;				//	32
+	uint32_t		FRAMEINDEX;				//	36
+	uint32_t		PADDING_INFO[2];		//	40
+											//	48
 };
 //	this struct describes a cube texture by describing its dimensions, and may be present in the buffer of data passed to vertex + frag shaders
-struct ISFShaderCubeInfo	{
-	float			size[2];
+struct ISFShaderCubeInfo	{			//	starts at offset...
+	float			size[2];			//	0
+	float			PADDING_CUBE[2];	//	8
+										//	16
 };
 //	this struct describes an image within a texture, and may be present in the buffer of data passed to vertex + frag shaders
-struct ISFShaderImgInfo	{
-	float			rect[4];	//	the image consists of the pixels in this region of the texture
-	float			size[2];	//	the size of the texture asset.  'rect' is necessarily a subset of (0, 0, size[0], size[1])
-	uint32_t		flip;	//	whether or not the image in 'rect' is flipped vertically
+struct ISFShaderImgInfo	{			//	starts at offset...
+	//	the image consists of the pixels in this region of the texture
+	float			rect[4];		//	0
+	//	the size of the texture asset.  'rect' is necessarily a subset of (0, 0, size[0], size[1])
+	float			size[2];		//	16
+	//	whether or not the image in 'rect' is flipped vertically
+	uint32_t		flip;			//	24
+	uint32_t		PADDING_IMG;	//	28
+									//	32
 };
 
 

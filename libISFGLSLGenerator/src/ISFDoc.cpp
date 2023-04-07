@@ -1595,6 +1595,9 @@ void ISFDoc::_initWithRawFragShaderString(const string & inRawFile)	{
 		vector<int32_t>		valArray;
 		bool				isImageInput = false;
 		bool				isAudioInput = false;
+		bool				isCubeInput = false;
+		bool				isColorInput = false;
+		bool				isPointInput = false;
 		bool				isFilterImageInput = false;
 		bool				isTransStartImageInput = false;
 		bool				isTransEndImageInput = false;
@@ -1663,6 +1666,7 @@ void ISFDoc::_initWithRawFragShaderString(const string & inRawFile)	{
 			}
 			else if (typeStringJ == "cube")	{
 				newAttribType = ISFValType_Cube;
+				isCubeInput = true;
 			}
 			else if (typeStringJ == "float")	{
 				newAttribType = ISFValType_Float;
@@ -1793,6 +1797,7 @@ void ISFDoc::_initWithRawFragShaderString(const string & inRawFile)	{
 			}
 			else if (typeStringJ == "color")	{
 				newAttribType = ISFValType_Color;
+				isColorInput = true;
 				
 				minVal = CreateISFValColor(0., 0., 0., 0.);
 				maxVal = CreateISFValColor(1., 1., 1., 1.);
@@ -1849,6 +1854,7 @@ void ISFDoc::_initWithRawFragShaderString(const string & inRawFile)	{
 			}
 			else if (typeStringJ == "point2D")	{
 				newAttribType = ISFValType_Point2D;
+				isPointInput = true;
 				
 				json		tmpObj;
 				tmpObj = inputDict.value("DEFAULT",json());
@@ -1921,8 +1927,9 @@ void ISFDoc::_initWithRawFragShaderString(const string & inRawFile)	{
 				}
 			}
 			//	else the attribute wasn't recognized- skip it
-			else
+			else	{
 				continue;
+			}
 			
 			//	if i'm here, i've got all the data necessary to create an input/attribute and need to do so
 			ISFAttrRef		newAttribRef = make_shared<ISFAttr>(inputKeyJ,
@@ -1944,7 +1951,12 @@ void ISFDoc::_initWithRawFragShaderString(const string & inRawFile)	{
 				_imageInputs.push_back(newAttribRef);
 			if (isAudioInput)
 				_audioInputs.push_back(newAttribRef);
-			
+			if (isCubeInput)
+				_cubeInputs.push_back(newAttribRef);
+			if (isColorInput)
+				_colorInputs.push_back(newAttribRef);
+			if (isPointInput)
+				_pointInputs.push_back(newAttribRef);
 		}
 		
 		//	check to see if this is a transition
@@ -2047,6 +2059,8 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 		fsDeclarations.emplace_back("uniform float\t\tTIMEDELTA;\n");
 		vsDeclarations.emplace_back("uniform int\t\tFRAMEINDEX;\n");
 		fsDeclarations.emplace_back("uniform int\t\tFRAMEINDEX;\n");
+		vsDeclarations.emplace_back("uniform vec2\t\tPADDING_INFO;\n");
+		fsDeclarations.emplace_back("uniform vec2\t\tPADDING_INFO;\n");
 	}
 	else	{
 		uboDeclarations.emplace_back("\tint\t\tPASSINDEX;\n");
@@ -2055,6 +2069,7 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 		uboDeclarations.emplace_back("\tvec4\t\tDATE;\n");
 		uboDeclarations.emplace_back("\tfloat\t\tTIMEDELTA;\n");
 		uboDeclarations.emplace_back("\tint\t\tFRAMEINDEX;\n");
+		uboDeclarations.emplace_back("\tvec2\t\tPADDING_INFO;\n");
 	}
 	
 	//	this block will be used to add declarations for a provided ISFAttr
@@ -2133,6 +2148,14 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 			else	{
 				uboDeclarations.emplace_back(FmtString("\tvec2\t\t_%s_imgSize;\n", nameCStr));
 			}
+			//	a vec2 to pad out the size of the struct
+			if (!inVarsAsUBO)	{
+				vsDeclarations.emplace_back(FmtString("uniform vec2\t\t_%s_padding;\n", nameCStr));
+				fsDeclarations.emplace_back(FmtString("uniform vec2\t\t_%s_padding;\n", nameCStr));
+			}
+			else	{
+				uboDeclarations.emplace_back(FmtString("\tvec2\t\t_%s_padding;\n", nameCStr));
+			}
 			//	update the relative offset into the buffer passed to the shader at which this value is stored
 			inRef->setOffsetInBuffer(cumulativeBufferOffset);
 			cumulativeBufferOffset += sizeof(ISFShaderCubeInfo);
@@ -2169,6 +2192,14 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 				else	{
 					uboDeclarations.emplace_back(FmtString("\tbool\t\t_%s_flip;\n", nameCStr));
 				}
+				//	an int to pad out the size of the struct
+				if (!inVarsAsUBO)	{
+					vsDeclarations.emplace_back(FmtString("uniform int\t\t_%s_padding;\n", nameCStr));
+					fsDeclarations.emplace_back(FmtString("uniform int\t\t_%s_padding;\n", nameCStr));
+				}
+				else	{
+					uboDeclarations.emplace_back(FmtString("\tint\t\t_%s_padding;\n", nameCStr));
+				}
 				//	update the relative offset into the buffer passed to the shader at which this value is stored
 				inRef->setOffsetInBuffer(cumulativeBufferOffset);
 				cumulativeBufferOffset += sizeof(ISFShaderImgInfo);
@@ -2191,38 +2222,73 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 			fsDeclarations.emplace_back(FmtString("uniform vec2\t\t_%s_imgSize;\n", nameCStr));
 			vsDeclarations.emplace_back(FmtString("uniform bool\t\t_%s_flip;\n", nameCStr));
 			fsDeclarations.emplace_back(FmtString("uniform bool\t\t_%s_flip;\n", nameCStr));
+			vsDeclarations.emplace_back(FmtString("uniform int\t\t_%s_padding;\n", nameCStr));
+			fsDeclarations.emplace_back(FmtString("uniform int\t\t_%s_padding;\n", nameCStr));
 		}
 		else	{
 			uboDeclarations.emplace_back(FmtString("\tvec4\t\t_%s_imgRect;\n", nameCStr));
 			uboDeclarations.emplace_back(FmtString("\tvec2\t\t_%s_imgSize;\n", nameCStr));
 			uboDeclarations.emplace_back(FmtString("\tbool\t\t_%s_flip;\n", nameCStr));
+			uboDeclarations.emplace_back(FmtString("\tint\t\t_%s_padding;\n", nameCStr));
 		}
 		//	update the relative offset into the buffer passed to the shader at which this value is stored
 		inRef->setOffsetInBuffer(cumulativeBufferOffset);
 		cumulativeBufferOffset += sizeof(ISFShaderImgInfo);
 	};
 	
-	//	add the variables for the various inputs
-	for (const auto & attrIt : _inputs)
-		attribDecBlock(attrIt);
-	//	add the variables for the imported buffers
+	//	we have to declare the variables in a particular order to preserve alignment when transpiled to metal
+	//	first do the image inports, image inputs, audio inputs, and cube inputs
 	for (const auto & attrIt : _imageImports)
 		attribDecBlock(attrIt);
-	//	add the variables for the render passes
+	for (const auto & attrIt : _imageInputs)
+		attribDecBlock(attrIt);
+	for (const auto & attrIt : _audioInputs)
+		attribDecBlock(attrIt);
+	for (const auto & attrIt : _cubeInputs)
+		attribDecBlock(attrIt);
+	//	declare the vars for the render passes (also images)
 	for (const auto & tmpPassRef : _renderPasses)	{
 		if (tmpPassRef->persistentFlag() || tmpPassRef->name().length() > 0)
 			targetBufferBlock(tmpPassRef);
 	}
-	/*
-	cout << "VS declarations are:\n";
-	for (const auto & stringIt : vsDeclarations)	{
-		cout << "\t" << stringIt << endl;
+	//	then do colors
+	for (const auto & attrIt : _colorInputs)
+		attribDecBlock(attrIt);
+	//	then do points
+	for (const auto & attrIt : _pointInputs)
+		attribDecBlock(attrIt);
+	//	finally, do the other vars
+	for (const auto & attrIt : _inputs)	{
+		switch (attrIt->type())	{
+		case ISFValType_None:
+		case ISFValType_Event:
+		case ISFValType_Bool:
+		case ISFValType_Long:
+		case ISFValType_Float:
+			attribDecBlock(attrIt);
+			break;
+		case ISFValType_Point2D:
+		case ISFValType_Color:
+		case ISFValType_Cube:
+		case ISFValType_Image:
+		case ISFValType_Audio:
+		case ISFValType_AudioFFT:
+			//	(already handled!)
+			break;
+		}
 	}
-	cout << "FS declarations are:\n";
-	for (const auto & stringIt : fsDeclarations)	{
-		cout << "\t" << stringIt << endl;
-	}
-	*/
+	
+	
+	//cout << "VS declarations are:\n";
+	//for (const auto & stringIt : vsDeclarations)	{
+	//	cout << "\t" << stringIt << endl;
+	//}
+	//cout << "FS declarations are:\n";
+	//for (const auto & stringIt : fsDeclarations)	{
+	//	cout << "\t" << stringIt << endl;
+	//}
+	
+	
 	//	now calculate the total length of the output string and reserve space for it
 	size_t			reserveSize = 0;
 	for (const auto & stringIt : fsDeclarations)	{
