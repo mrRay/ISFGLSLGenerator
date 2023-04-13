@@ -1586,25 +1586,25 @@ void ISFDoc::_initWithRawFragShaderString(const string & inRawFile)	{
 	//	parse the INPUTS from the JSON dict (these form the basis of user interaction)
 	auto			inputsArray = (caughtJSONException) ? json() : jblob.value("INPUTS",json());
 	if (inputsArray != nullptr && inputsArray.type()==json::value_t::array)	{
-		ISFValType			newAttribType = ISFValType_None;
-		ISFVal				minVal = CreateISFValNull();
-		ISFVal				maxVal = CreateISFValNull();
-		ISFVal				defVal = CreateISFValNull();
-		ISFVal				idenVal = CreateISFValNull();
-		vector<string>		labelArray;
-		vector<int32_t>		valArray;
-		bool				isImageInput = false;
-		bool				isAudioInput = false;
-		bool				isCubeInput = false;
-		bool				isColorInput = false;
-		bool				isPointInput = false;
-		bool				isFilterImageInput = false;
-		bool				isTransStartImageInput = false;
-		bool				isTransEndImageInput = false;
-		bool				isTransProgressFloatInput = false;
-		
 		//	run through the array of inputs
 		for (auto it=inputsArray.begin(); it!=inputsArray.end(); ++it)	{
+			ISFValType			newAttribType = ISFValType_None;
+			ISFVal				minVal = CreateISFValNull();
+			ISFVal				maxVal = CreateISFValNull();
+			ISFVal				defVal = CreateISFValNull();
+			ISFVal				idenVal = CreateISFValNull();
+			vector<string>		labelArray;
+			vector<int32_t>		valArray;
+			bool				isImageInput = false;
+			bool				isAudioInput = false;
+			bool				isCubeInput = false;
+			bool				isColorInput = false;
+			bool				isPointInput = false;
+			bool				isFilterImageInput = false;
+			bool				isTransStartImageInput = false;
+			bool				isTransEndImageInput = false;
+			bool				isTransProgressFloatInput = false;
+			
 			json		inputDict = it.value();
 			//	skip this input if the input isn't a dict
 			if (!inputDict.is_object())
@@ -1981,10 +1981,105 @@ void ISFDoc::_initWithRawFragShaderString(const string & inRawFile)	{
 		}
 		if (hasStartImage && hasEndImage && hasProgress)
 			_type = ISFFileType_Transition;
+	}	//	if the inputs array is non-nil
+	
+	
+	//	at this point we've created all the attributes- but we haven't populated their "offset in buffer" vars.  
+	//	this is potentially problematic- the attr offsets in the UBO depend on the order in which the attrs are 
+	//	declared in the shader source
+		//	this block will be used to add declarations for a provided ISFAttr
+	uint32_t		cumulativeBufferOffset = 0;
+	auto	attribDecBlock = [&](const ISFAttrRef & inRef)	{
+		const string &		name = inRef->name();
+		const char *		nameCStr = name.c_str();
+		switch (inRef->type())	{
+		case ISFValType_None:
+			break;
+		case ISFValType_Event:
+		case ISFValType_Bool:
+			inRef->setOffsetInBuffer(cumulativeBufferOffset);
+			cumulativeBufferOffset += sizeof(uint);
+			break;
+		case ISFValType_Long:
+			inRef->setOffsetInBuffer(cumulativeBufferOffset);
+			cumulativeBufferOffset += sizeof(int);
+			break;
+		case ISFValType_Float:
+			inRef->setOffsetInBuffer(cumulativeBufferOffset);
+			cumulativeBufferOffset += sizeof(float);
+			break;
+		case ISFValType_Point2D:
+			inRef->setOffsetInBuffer(cumulativeBufferOffset);
+			cumulativeBufferOffset += (sizeof(float) * 2);
+			break;
+		case ISFValType_Color:
+			inRef->setOffsetInBuffer(cumulativeBufferOffset);
+			cumulativeBufferOffset += (sizeof(float) * 4);
+			break;
+		case ISFValType_Cube:
+			inRef->setOffsetInBuffer(cumulativeBufferOffset);
+			cumulativeBufferOffset += sizeof(ISFShaderCubeInfo);
+			break;
+		case ISFValType_Image:
+		case ISFValType_Audio:
+		case ISFValType_AudioFFT:
+			inRef->setOffsetInBuffer(cumulativeBufferOffset);
+			cumulativeBufferOffset += sizeof(ISFShaderImgInfo);
+			break;
+		}
+	};
+	//	this block will be used to add declarations for a provided ISFPassTarget
+	auto		targetBufferBlock = [&](const ISFPassTargetRef & inRef)	{
+		inRef->setOffsetInBuffer(cumulativeBufferOffset);
+		cumulativeBufferOffset += sizeof(ISFShaderImgInfo);
+	};
+	//	we have to declare the variables in a particular order to preserve alignment when transpiled to metal
+	//	first do the image inports, image inputs, audio inputs, and cube inputs
+	for (const auto & attrIt : _imageImports)
+		attribDecBlock(attrIt);
+	for (const auto & attrIt : _imageInputs)
+		attribDecBlock(attrIt);
+	for (const auto & attrIt : _audioInputs)
+		attribDecBlock(attrIt);
+	for (const auto & attrIt : _cubeInputs)
+		attribDecBlock(attrIt);
+	//	declare the vars for the render passes (also images)
+	for (const auto & tmpPassRef : _renderPasses)	{
+		if (tmpPassRef->persistentFlag() || tmpPassRef->name().length() > 0)
+			targetBufferBlock(tmpPassRef);
 	}
+	//	then do colors
+	for (const auto & attrIt : _colorInputs)
+		attribDecBlock(attrIt);
+	//	then do points
+	for (const auto & attrIt : _pointInputs)
+		attribDecBlock(attrIt);
+	//	finally, do the other vars
+	for (const auto & attrIt : _inputs)	{
+		switch (attrIt->type())	{
+		case ISFValType_None:
+		case ISFValType_Event:
+		case ISFValType_Bool:
+		case ISFValType_Long:
+		case ISFValType_Float:
+			attribDecBlock(attrIt);
+			break;
+		case ISFValType_Point2D:
+		case ISFValType_Color:
+		case ISFValType_Cube:
+		case ISFValType_Image:
+		case ISFValType_Audio:
+		case ISFValType_AudioFFT:
+			//	(already handled!)
+			break;
+		}
+	}
+	
+	_maxUBOSize = sizeof(ISFShaderRenderInfo) + cumulativeBufferOffset;
+	//cout << "ISFDoc calculates maxUBOSize to be " << _maxUBOSize << endl;
 }
 bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string * outFSString, const GLVersion & inGLVers, const bool & inVarsAsUBO, size_t * outUBOSize)	{
-	cout << __PRETTY_FUNCTION__ << endl;
+	//cout << __PRETTY_FUNCTION__ << endl;
 	lock_guard<recursive_mutex>		lock(_propLock);
 	
 	if (outVSString==nullptr || outFSString==nullptr)
@@ -2076,6 +2171,7 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 	uint32_t		cumulativeBufferOffset = 0;
 	auto	attribDecBlock = [&](const ISFAttrRef & inRef)	{
 		const string &		name = inRef->name();
+		//cout << "attribDecBlock() ... " << name << endl;
 		const char *		nameCStr = name.c_str();
 		switch (inRef->type())	{
 		case ISFValType_None:
@@ -2089,8 +2185,6 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 			else	{
 				uboDeclarations.emplace_back(FmtString("\tbool\t\t%s;\n", nameCStr));
 			}
-			inRef->setOffsetInBuffer(cumulativeBufferOffset);
-			cumulativeBufferOffset += sizeof(uint);
 			break;
 		case ISFValType_Long:
 			if (!inVarsAsUBO)	{
@@ -2100,8 +2194,6 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 			else	{
 				uboDeclarations.emplace_back(FmtString("\tint\t\t%s;\n", nameCStr));
 			}
-			inRef->setOffsetInBuffer(cumulativeBufferOffset);
-			cumulativeBufferOffset += sizeof(int);
 			break;
 		case ISFValType_Float:
 			if (!inVarsAsUBO)	{
@@ -2111,8 +2203,6 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 			else	{
 				uboDeclarations.emplace_back(FmtString("\tfloat\t\t%s;\n", nameCStr));
 			}
-			inRef->setOffsetInBuffer(cumulativeBufferOffset);
-			cumulativeBufferOffset += sizeof(float);
 			break;
 		case ISFValType_Point2D:
 			if (!inVarsAsUBO)	{
@@ -2122,8 +2212,6 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 			else	{
 				uboDeclarations.emplace_back(FmtString("\tvec2\t\t%s;\n", nameCStr));
 			}
-			inRef->setOffsetInBuffer(cumulativeBufferOffset);
-			cumulativeBufferOffset += (sizeof(float) * 2);
 			break;
 		case ISFValType_Color:
 			if (!inVarsAsUBO)	{
@@ -2133,8 +2221,6 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 			else	{
 				uboDeclarations.emplace_back(FmtString("\tvec4\t\t%s;\n", nameCStr));
 			}
-			inRef->setOffsetInBuffer(cumulativeBufferOffset);
-			cumulativeBufferOffset += (sizeof(float) * 4);
 			break;
 		case ISFValType_Cube:
 			//	make a sampler for the cubemap texture
@@ -2156,9 +2242,6 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 			else	{
 				uboDeclarations.emplace_back(FmtString("\tvec2\t\t_%s_padding;\n", nameCStr));
 			}
-			//	update the relative offset into the buffer passed to the shader at which this value is stored
-			inRef->setOffsetInBuffer(cumulativeBufferOffset);
-			cumulativeBufferOffset += sizeof(ISFShaderCubeInfo);
 			break;
 		case ISFValType_Image:
 		case ISFValType_Audio:
@@ -2200,9 +2283,6 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 				else	{
 					uboDeclarations.emplace_back(FmtString("\tint\t\t_%s_padding;\n", nameCStr));
 				}
-				//	update the relative offset into the buffer passed to the shader at which this value is stored
-				inRef->setOffsetInBuffer(cumulativeBufferOffset);
-				cumulativeBufferOffset += sizeof(ISFShaderImgInfo);
 				break;
 			}
 		}
@@ -2231,9 +2311,6 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 			uboDeclarations.emplace_back(FmtString("\tbool\t\t_%s_flip;\n", nameCStr));
 			uboDeclarations.emplace_back(FmtString("\tint\t\t_%s_padding;\n", nameCStr));
 		}
-		//	update the relative offset into the buffer passed to the shader at which this value is stored
-		inRef->setOffsetInBuffer(cumulativeBufferOffset);
-		cumulativeBufferOffset += sizeof(ISFShaderImgInfo);
 	};
 	
 	//	we have to declare the variables in a particular order to preserve alignment when transpiled to metal

@@ -46,6 +46,7 @@ class ISFDoc	{
 		std::vector<ISFAttrRef>		_colorInputs;	//	array of ISFAttrRef instances that describe color inputs.  separate array because we have to declare attrs types in a specific order to ensure the variables are all aligned.
 		std::vector<ISFAttrRef>		_pointInputs;	//	array of ISFAttrRef instances that describe point inputs.  separate array because we have to declare attrs types in a specific order to ensure the variables are all aligned.
 		
+		uint32_t		_maxUBOSize { 0 };
 		//bool					bufferRequiresEval = false;	//	NO by default, set to YES during file open if any of the buffers require evaluation (faster than checking every single buffer every pass)
 		//std::vector<std::string>		_renderPasses;
 		std::vector<ISFPassTargetRef>	_renderPasses;
@@ -103,6 +104,8 @@ class ISFDoc	{
 		std::string vsn() const { return (_vsn==nullptr) ? std::string("") : std::string(*_vsn); }
 		//!	Returns the receiver's file type.
 		ISFFileType type() const { return _type; }
+		//! Returns the max size of the buffer necessary to pass all of the attribute and pass data to the shader.  calculated when the doc's created.
+		uint32_t getMaxUBOSize() const { return _maxUBOSize; }
 		//!	Returns a std::vector containing strings listing the receiver's categories.
 		std::vector<std::string> & categories() { return _categories; }
 		
