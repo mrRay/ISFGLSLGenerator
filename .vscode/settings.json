@@ -80,4 +80,5 @@
 		"utility": "cpp",
 		"format": "cpp"
 	},
+	"cmake.generator": "Xcode",
 }

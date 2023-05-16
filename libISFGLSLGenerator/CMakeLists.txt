@@ -84,3 +84,6 @@ target_include_directories(ISFGLSLGenerator PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/i
 #	)
 
 target_compile_features(ISFGLSLGenerator PUBLIC cxx_std_20)
+
+install(TARGETS ISFGLSLGenerator DESTINATION lib)
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/" DESTINATION include)
