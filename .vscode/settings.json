@@ -78,7 +78,8 @@
 		"functional": "cpp",
 		"iterator": "cpp",
 		"utility": "cpp",
-		"format": "cpp"
+		"format": "cpp",
+		"filesystem": "cpp"
 	},
 	"cmake.generator": "Xcode",
 }

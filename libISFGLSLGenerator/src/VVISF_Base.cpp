@@ -5,6 +5,8 @@
 #include "ISFDoc.hpp"
 
 
+#define A_HAS_B(a,b) (((a)&(b))==(b))
+
 namespace fs = std::filesystem;
 
 
@@ -64,7 +66,7 @@ std::filesystem::path PathByExpandingTildeInPath(const std::filesystem::path & i
 
 
 shared_ptr<vector<string>> CreateArrayOfISFsForPath(const string & inPath, const ISFFileType & inType, const bool & inRecursive)	{
-	cout << __PRETTY_FUNCTION__ << "... " << inPath << endl;
+	//cout << __PRETTY_FUNCTION__ << "... " << inPath << endl;
 	fs::path		path { inPath };
 	if (!exists(path))	{
 		cout << "ERR: passed path (" << path << ") doesn't exist, " << __PRETTY_FUNCTION__ << endl;
@@ -83,12 +85,18 @@ shared_ptr<vector<string>> CreateArrayOfISFsForPath(const string & inPath, const
 	
 	//	this lambda checks the passed string (which contains a path) and adds it to 'returnMe' if its extension indicates it's a shader
 	auto CheckPathForISFFile = [&](const fs::path & inPath)	{
-		string		extension = inPath.extension();
-		const char *	cExtension = extension.c_str();
-		if (strcasecmp(cExtension, ".fs") == 0
-		|| strcasecmp(cExtension, ".frag") == 0
-		|| strcasecmp(cExtension, ".isf") == 0)
-		{
+		ISFDocRef		tmpDoc = nullptr;
+		try	{
+			tmpDoc = CreateISFDocRef(inPath.string(), true);
+		}
+		catch (...)	{
+			return;
+		}
+		
+		if (tmpDoc == nullptr)
+			return;
+		
+		if (A_HAS_B(tmpDoc->type(), inType))	{
 			returnMe->push_back( inPath.string() );
 		}
 	};
@@ -104,12 +112,14 @@ shared_ptr<vector<string>> CreateArrayOfISFsForPath(const string & inPath, const
 		}
 	}
 	
+	std::sort(returnMe->begin(), returnMe->end());
+	
 	return returnMe;
 }
 shared_ptr<vector<string>> CreateArrayOfDefaultISFs(const ISFFileType & inType)	{
 #if defined(MAC) && MAC==1
-	shared_ptr<vector<string>>		global_paths = CreateArrayOfISFsForPath("/Library/Graphics/ISF", ISFFileType_All, true);
-	shared_ptr<vector<string>>		local_paths = CreateArrayOfISFsForPath(PathByExpandingTildeInPath("~/Library/Graphics/ISF"), ISFFileType_All, true);
+	shared_ptr<vector<string>>		global_paths = CreateArrayOfISFsForPath("/Library/Graphics/ISF", inType, true);
+	shared_ptr<vector<string>>		local_paths = CreateArrayOfISFsForPath(PathByExpandingTildeInPath("~/Library/Graphics/ISF"), inType, true);
 	
 	shared_ptr<vector<string>>		returnMe = make_shared<vector<string>>();
 	
@@ -122,7 +132,7 @@ shared_ptr<vector<string>> CreateArrayOfDefaultISFs(const ISFFileType & inType)	
 	return returnMe;
 #elif defined(LINUX) && LINUX==1
 #elif defined(WIN) && WIN==1
-	return CreateArrayOfISFsForPath("/ProgramData/ISF", ISFFileType_All, true);
+	return CreateArrayOfISFsForPath("/ProgramData/ISF", inType, true);
 #endif
 }
 
