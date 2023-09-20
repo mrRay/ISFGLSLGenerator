@@ -121,12 +121,16 @@ void main(void)	{	\n\
 static const std::string		ISFVertInitFunc = std::string("	\n\
 	\n\
 	//	gl_Position should be equal to gl_ProjectionMatrix * gl_ModelViewMatrix * gl_Vertex	\n\
+	//mat4			projectionMatrix = mat4(2./RENDERSIZE.x, 0., 0., -1.,	\n\
+	//	0., 2./RENDERSIZE.y, 0., -1.,	\n\
+	//	0., 0., -1., 0.,	\n\
+	//	0., 0., 0., 1.);	\n\
 	mat4			projectionMatrix = mat4(2./RENDERSIZE.x, 0., 0., -1.,	\n\
-		0., 2./RENDERSIZE.y, 0., -1.,	\n\
+		0., -2./RENDERSIZE.y, 0., 1.,	\n\
 		0., 0., -1., 0.,	\n\
 		0., 0., 0., 1.);	\n\
 	gl_Position = VERTEXDATA * projectionMatrix;	\n\
-	isf_FragNormCoord = vec2((gl_Position.x+1.0)/2.0, (1.0-((gl_Position.y+1.0)/2.0)));	\n\
+	isf_FragNormCoord = vec2((gl_Position.x+1.0)/2.0, ((gl_Position.y+1.0)/2.0));	\n\
 	vec2	isf_fragCoord = floor(isf_FragNormCoord * RENDERSIZE);	\n\
 	\n\
 ");

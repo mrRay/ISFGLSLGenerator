@@ -433,11 +433,11 @@ bool ISFDoc::generateShaderSource(string * outFragSrc, string * outVertSrc, cons
 					string &		samplerCoord = varArray[1];
 					const char *	samplerCoordC = samplerCoord.c_str();
 					if (varArrayCount==3)	{
-						newFuncString = FmtString("VVSAMPLER_2DBYPIXEL(%s, _%s_imgRect, _%s_imgSize, _%s_flip, %s, %s)",samplerNameC,samplerNameC,samplerNameC,samplerNameC,samplerCoordC,varArray[2].c_str());
+						newFuncString = FmtString("VVSAMPLER_2DBYPIXEL(%s, _%s_imgRect, _%s_imgSize, !(_%s_flip), %s, %s)",samplerNameC,samplerNameC,samplerNameC,samplerNameC,samplerCoordC,varArray[2].c_str());
 						requires2DBiasMacro = true;
 					}
 					else	{
-						newFuncString = FmtString("VVSAMPLER_2DBYPIXEL(%s, _%s_imgRect, _%s_imgSize, _%s_flip, %s)",samplerNameC,samplerNameC,samplerNameC,samplerNameC,samplerCoordC);
+						newFuncString = FmtString("VVSAMPLER_2DBYPIXEL(%s, _%s_imgRect, _%s_imgSize, !(_%s_flip), %s)",samplerNameC,samplerNameC,samplerNameC,samplerNameC,samplerCoordC);
 						requires2DMacro = true;
 					}
 					

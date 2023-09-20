@@ -96,7 +96,7 @@ shared_ptr<vector<string>> CreateArrayOfISFsForPath(const string & inPath, const
 		if (tmpDoc == nullptr)
 			return;
 		
-		if (A_HAS_B(tmpDoc->type(), inType))	{
+		if (A_HAS_B(inType, tmpDoc->type()))	{
 			returnMe->push_back( inPath.string() );
 		}
 	};
