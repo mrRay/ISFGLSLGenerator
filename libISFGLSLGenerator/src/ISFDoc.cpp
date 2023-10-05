@@ -400,6 +400,15 @@ bool ISFDoc::generateShaderSource(string * outFragSrc, string * outVertSrc, cons
 				modSrcString.replace(tmpRange.loc, tmpRange.len, newString, 0, newString.size());
 		} while (tmpRange.loc != string::npos);
 		
+		//	find-and-replace "gl_FragCoord" with "isf_FragCoord".  this submodule's used for generating GLSL that is transpiled automatically to Metal, which has an inverted y axis.
+		searchString = string("gl_FragCoord");
+		newString = string("isf_FragCoord");
+		tmpRange = Range(0, searchString.size());
+		do	{
+			tmpRange.loc = modSrcString.find(searchString);
+			if (tmpRange.loc != string::npos)
+				modSrcString.replace(tmpRange.loc, tmpRange.len, newString, 0, newString.size());
+		} while (tmpRange.loc != string::npos);
 		
 		//	now find-and-replace IMG_PIXEL
 		searchString = string("IMG_PIXEL");
@@ -433,11 +442,11 @@ bool ISFDoc::generateShaderSource(string * outFragSrc, string * outVertSrc, cons
 					string &		samplerCoord = varArray[1];
 					const char *	samplerCoordC = samplerCoord.c_str();
 					if (varArrayCount==3)	{
-						newFuncString = FmtString("VVSAMPLER_2DBYPIXEL(%s, _%s_imgRect, _%s_imgSize, !(_%s_flip), %s, %s)",samplerNameC,samplerNameC,samplerNameC,samplerNameC,samplerCoordC,varArray[2].c_str());
+						newFuncString = FmtString("VVSAMPLER_2DBYPIXEL(%s, _%s_imgRect, _%s_imgSize, (_%s_flip), %s, %s)",samplerNameC,samplerNameC,samplerNameC,samplerNameC,samplerCoordC,varArray[2].c_str());
 						requires2DBiasMacro = true;
 					}
 					else	{
-						newFuncString = FmtString("VVSAMPLER_2DBYPIXEL(%s, _%s_imgRect, _%s_imgSize, !(_%s_flip), %s)",samplerNameC,samplerNameC,samplerNameC,samplerNameC,samplerCoordC);
+						newFuncString = FmtString("VVSAMPLER_2DBYPIXEL(%s, _%s_imgRect, _%s_imgSize, (_%s_flip), %s)",samplerNameC,samplerNameC,samplerNameC,samplerNameC,samplerCoordC);
 						requires2DMacro = true;
 					}
 					
@@ -970,8 +979,8 @@ bool ISFDoc::generateShaderSource(string * outFragSrc, string * outVertSrc, cons
 			//newVertShaderSrc.append(FmtString("\t_%s_texCoord = (_%s_flip) ? vec2(((isf_fragCoord.x/(_%s_imgSize.x)*_%s_imgRect.z)+_%s_imgRect.x), (_%s_imgRect.w-(isf_fragCoord.y/(_%s_imgSize.y)*_%s_imgRect.w)+_%s_imgRect.y)) : vec2(((isf_fragCoord.x/(_%s_imgSize.x)*_%s_imgRect.z)+_%s_imgRect.x), (isf_fragCoord.y/(_%s_imgSize.y)*_%s_imgRect.w)+_%s_imgRect.y);\n",samplerName,samplerName,samplerName,samplerName,samplerName,samplerName,samplerName,samplerName,samplerName,samplerName,samplerName,samplerName,samplerName,samplerName,samplerName));
 			//	the floor(XXX + 0.5) trick used here is meant to be equivalent to round(XXX), which doesn't exist in GLSL
 			newVertShaderSrc.append(FmtString("\t_%s_texCoord = (_%s_flip) \
-				? vec2(floor((isf_fragCoord.x/(_%s_imgSize.x)*_%s_imgRect.z)+_%s_imgRect.x+0.5), floor(_%s_imgRect.w-(isf_fragCoord.y/(_%s_imgSize.y)*_%s_imgRect.w)+_%s_imgRect.y+0.5)) \
-				: vec2(floor((isf_fragCoord.x/(_%s_imgSize.x)*_%s_imgRect.z)+_%s_imgRect.x+0.5), floor((isf_fragCoord.y/(_%s_imgSize.y)*_%s_imgRect.w)+_%s_imgRect.y+0.5));\n",
+				? vec2(floor((isf_FragCoord.x/(_%s_imgSize.x)*_%s_imgRect.z)+_%s_imgRect.x+0.5), floor(_%s_imgRect.w-(isf_FragCoord.y/(_%s_imgSize.y)*_%s_imgRect.w)+_%s_imgRect.y+0.5)) \
+				: vec2(floor((isf_FragCoord.x/(_%s_imgSize.x)*_%s_imgRect.z)+_%s_imgRect.x+0.5), floor((isf_FragCoord.y/(_%s_imgSize.y)*_%s_imgRect.w)+_%s_imgRect.y+0.5));\n",
 				samplerName,samplerName,samplerName,samplerName,samplerName,samplerName,samplerName,samplerName,samplerName,samplerName,samplerName,samplerName,samplerName,samplerName,samplerName));
 		}
 		//	run through the IMG_THIS_NORM_PIXEL sampler names, populating the varying vec2 variables i declared
@@ -2123,6 +2132,8 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 	case GLVersion_ES2:
 		vsDeclarations.emplace_back("varying vec2\t\tisf_FragNormCoord;\n");
 		fsDeclarations.emplace_back("varying vec2\t\tisf_FragNormCoord;\n");
+		vsDeclarations.emplace_back("varying vec2\t\tisf_FragCoord;\n");
+		fsDeclarations.emplace_back("varying vec2\t\tisf_FragCoord;\n");
 		//vsDeclarations.emplace_back("varying vec3\t\tisf_VertNorm;\n");
 		//fsDeclarations.emplace_back("varying vec3\t\tisf_VertNorm;\n");
 		//vsDeclarations.emplace_back("varying vec3\t\tisf_VertPos;\n");
@@ -2133,6 +2144,8 @@ bool ISFDoc::_assembleShaderSource_VarDeclarations(string * outVSString, string 
 	case GLVersion_4:
 		vsDeclarations.emplace_back("out vec2\t\tisf_FragNormCoord;\n");
 		fsDeclarations.emplace_back("in vec2\t\tisf_FragNormCoord;\n");
+		vsDeclarations.emplace_back("out vec2\t\tisf_FragCoord;\n");
+		fsDeclarations.emplace_back("in vec2\t\tisf_FragCoord;\n");
 		//vsDeclarations.emplace_back("out vec3\t\tisf_VertNorm;\n");
 		//fsDeclarations.emplace_back("in vec3\t\tisf_VertNorm;\n");
 		//vsDeclarations.emplace_back("out vec3\t\tisf_VertPos;\n");

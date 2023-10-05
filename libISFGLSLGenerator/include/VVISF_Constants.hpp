@@ -131,7 +131,7 @@ static const std::string		ISFVertInitFunc = std::string("	\n\
 		0., 0., 0., 1.);	\n\
 	gl_Position = VERTEXDATA * projectionMatrix;	\n\
 	isf_FragNormCoord = vec2((gl_Position.x+1.0)/2.0, ((gl_Position.y+1.0)/2.0));	\n\
-	vec2	isf_fragCoord = floor(isf_FragNormCoord * RENDERSIZE);	\n\
+	isf_FragCoord = floor(isf_FragNormCoord * RENDERSIZE);	\n\
 	\n\
 ");
 static const std::string		ISFVertVarDec_GLES2 = std::string("	\n\
