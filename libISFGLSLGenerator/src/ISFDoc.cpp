@@ -1233,6 +1233,8 @@ void ISFDoc::_initWithRawFragShaderString(const string & inRawFile)	{
 							newTargetBuffer->setTargetWidthString(FmtString("%f",tmpVal));
 							}
 							break;
+						case json::value_t::binary:
+							break;
 						}
 						
 					}
@@ -1268,6 +1270,8 @@ void ISFDoc::_initWithRawFragShaderString(const string & inRawFile)	{
 							double			tmpVal = tmpObj.get<float>();
 							newTargetBuffer->setTargetHeightString(FmtString("%f",tmpVal));
 							}
+							break;
+						case json::value_t::binary:
 							break;
 						}
 					}
@@ -1523,6 +1527,8 @@ void ISFDoc::_initWithRawFragShaderString(const string & inRawFile)	{
 						passRef->setTargetWidthString(FmtString("%f",tmpVal));
 						}
 						break;
+					case json::value_t::binary:
+						break;
 					}
 				}
 				
@@ -1558,6 +1564,8 @@ void ISFDoc::_initWithRawFragShaderString(const string & inRawFile)	{
 						double			tmpVal = tmpObj.get<float>();
 						passRef->setTargetHeightString(FmtString("%f",tmpVal));
 						}
+						break;
+					case json::value_t::binary:
 						break;
 					}
 				}
