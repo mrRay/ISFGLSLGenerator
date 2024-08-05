@@ -1180,115 +1180,6 @@ void ISFDoc::_initWithRawFragShaderString(const string & inRawFile)	{
 		}
 	}
 	
-	//	parse the persistent buffers from the JSON dict (ISF v1, deprecated and no longer in use now)
-	anObj = (caughtJSONException) ? json() : jblob.value("PERSISTENT_BUFFERS",json());
-	if (!anObj.is_null())	{
-		//	if the persistent buffers object is an array, check that they're strings and add accordingly
-		if (anObj.type() == json::value_t::array)	{
-			//for (auto const & it : anObj)	{
-			for (auto & it : anObj)	{
-				if (it.type() == json::value_t::string)	{
-					ISFPassTargetRef		tmpPass = ISFPassTarget::Create(it.get<string>(), this);
-					_renderPasses.push_back( tmpPass );
-				}
-			}
-		}
-		//	else if the persistent buffers object is a dict, add and populate the dict accordingly
-		else if (anObj.type() == json::value_t::object)	{
-			for (json::iterator		it = anObj.begin(); it != anObj.end(); ++it)	{
-				string				bufferName = it.key();
-				json				bufferDescription = it.value();
-				if (bufferDescription.type() == json::value_t::object)	{
-					ISFPassTargetRef		newTargetBuffer = ISFPassTarget::Create(bufferName, this);
-					json				tmpObj = bufferDescription.value("WIDTH",json());
-					if (tmpObj != nullptr)	{
-						switch (tmpObj.type())	{
-						case json::value_t::null:
-						case json::value_t::object:
-						case json::value_t::array:
-						case json::value_t::boolean:
-						case json::value_t::discarded:
-						case json::value_t::string:
-							{
-							string			tmpString = tmpObj.get<string>();
-							FindAndReplaceInPlace("$", "", tmpString);
-							newTargetBuffer->setTargetWidthString(tmpString);
-							}
-							break;
-						case json::value_t::number_integer:
-							{
-							int				tmpVal = tmpObj.get<int>();
-							newTargetBuffer->setTargetWidthString(FmtString("%d",tmpVal));
-							}
-							break;
-						case json::value_t::number_unsigned:
-							{
-							unsigned long	tmpVal = tmpObj.get<unsigned long>();
-							newTargetBuffer->setTargetWidthString(FmtString("%ld",tmpVal));
-							}
-							break;
-						case json::value_t::number_float:
-							{
-							double			tmpVal = tmpObj.get<float>();
-							newTargetBuffer->setTargetWidthString(FmtString("%f",tmpVal));
-							}
-							break;
-						case json::value_t::binary:
-							break;
-						}
-						
-					}
-					tmpObj = bufferDescription.value("HEIGHT",json());
-					if (tmpObj != nullptr)	{
-						switch (tmpObj.type())	{
-						case json::value_t::null:
-						case json::value_t::object:
-						case json::value_t::array:
-						case json::value_t::boolean:
-						case json::value_t::discarded:
-						case json::value_t::string:
-							{
-							string			tmpString = tmpObj.get<string>();
-							FindAndReplaceInPlace("$", "", tmpString);
-							newTargetBuffer->setTargetHeightString(tmpString);
-							}
-							break;
-						case json::value_t::number_integer:
-							{
-							int				tmpVal = tmpObj.get<int>();
-							newTargetBuffer->setTargetHeightString(FmtString("%d",tmpVal));
-							}
-							break;
-						case json::value_t::number_unsigned:
-							{
-							unsigned long	tmpVal = tmpObj.get<unsigned long>();
-							newTargetBuffer->setTargetHeightString(FmtString("%ld",tmpVal));
-							}
-							break;
-						case json::value_t::number_float:
-							{
-							double			tmpVal = tmpObj.get<float>();
-							newTargetBuffer->setTargetHeightString(FmtString("%f",tmpVal));
-							}
-							break;
-						case json::value_t::binary:
-							break;
-						}
-					}
-					tmpObj = bufferDescription.value("FLOAT",json());
-					if (tmpObj != nullptr && tmpObj.is_number() && tmpObj.get<bool>())	{
-						newTargetBuffer->setFloatFlag(true);
-					}
-					//	don't forget to flag it as a persistent buffer!
-					newTargetBuffer->setPersistentFlag(true);
-					//	add the new persistent buffer (as a render pass) to the array of render passes
-					_renderPasses.push_back(newTargetBuffer);
-				}
-			}
-		}
-		
-	}
-	
 	
 	//	parse the array of imported images
 	anObj = (caughtJSONException) ? json() : jblob.value("IMPORTED",json());
@@ -1437,6 +1328,120 @@ void ISFDoc::_initWithRawFragShaderString(const string & inRawFile)	{
 		}
 	}
 	
+	//	parse the persistent buffers from the JSON dict (ISF v1, deprecated and no longer in use now)
+	anObj = (caughtJSONException) ? json() : jblob.value("PERSISTENT_BUFFERS",json());
+	if (!anObj.is_null())	{
+		//	if the persistent buffers object is an array, check that they're strings and add accordingly
+		if (anObj.type() == json::value_t::array)	{
+			//for (auto const & it : anObj)	{
+			for (auto & it : anObj)	{
+				if (it.type() == json::value_t::string)	{
+					ISFPassTargetRef		tmpPass = this->passTargetForKey( it.get<string>() );
+					if (tmpPass == nullptr)	{
+						tmpPass = ISFPassTarget::Create(it.get<string>(), this);
+						_renderPasses.push_back( tmpPass );
+					}
+				}
+			}
+		}
+		//	else if the persistent buffers object is a dict, add and populate the dict accordingly
+		else if (anObj.type() == json::value_t::object)	{
+			for (json::iterator		it = anObj.begin(); it != anObj.end(); ++it)	{
+				string				bufferName = it.key();
+				json				bufferDescription = it.value();
+				if (bufferDescription.type() == json::value_t::object)	{
+					ISFPassTargetRef		newTargetBuffer = this->passTargetForKey(bufferName);
+					if (newTargetBuffer == nullptr)	{
+						newTargetBuffer = ISFPassTarget::Create(bufferName, this);
+					}
+					json				tmpObj = bufferDescription.value("WIDTH",json());
+					if (tmpObj != nullptr)	{
+						switch (tmpObj.type())	{
+						case json::value_t::null:
+						case json::value_t::object:
+						case json::value_t::array:
+						case json::value_t::boolean:
+						case json::value_t::discarded:
+						case json::value_t::string:
+							{
+							string			tmpString = tmpObj.get<string>();
+							FindAndReplaceInPlace("$", "", tmpString);
+							newTargetBuffer->setTargetWidthString(tmpString);
+							}
+							break;
+						case json::value_t::number_integer:
+							{
+							int				tmpVal = tmpObj.get<int>();
+							newTargetBuffer->setTargetWidthString(FmtString("%d",tmpVal));
+							}
+							break;
+						case json::value_t::number_unsigned:
+							{
+							unsigned long	tmpVal = tmpObj.get<unsigned long>();
+							newTargetBuffer->setTargetWidthString(FmtString("%ld",tmpVal));
+							}
+							break;
+						case json::value_t::number_float:
+							{
+							double			tmpVal = tmpObj.get<float>();
+							newTargetBuffer->setTargetWidthString(FmtString("%f",tmpVal));
+							}
+							break;
+						case json::value_t::binary:
+							break;
+						}
+						
+					}
+					tmpObj = bufferDescription.value("HEIGHT",json());
+					if (tmpObj != nullptr)	{
+						switch (tmpObj.type())	{
+						case json::value_t::null:
+						case json::value_t::object:
+						case json::value_t::array:
+						case json::value_t::boolean:
+						case json::value_t::discarded:
+						case json::value_t::string:
+							{
+							string			tmpString = tmpObj.get<string>();
+							FindAndReplaceInPlace("$", "", tmpString);
+							newTargetBuffer->setTargetHeightString(tmpString);
+							}
+							break;
+						case json::value_t::number_integer:
+							{
+							int				tmpVal = tmpObj.get<int>();
+							newTargetBuffer->setTargetHeightString(FmtString("%d",tmpVal));
+							}
+							break;
+						case json::value_t::number_unsigned:
+							{
+							unsigned long	tmpVal = tmpObj.get<unsigned long>();
+							newTargetBuffer->setTargetHeightString(FmtString("%ld",tmpVal));
+							}
+							break;
+						case json::value_t::number_float:
+							{
+							double			tmpVal = tmpObj.get<float>();
+							newTargetBuffer->setTargetHeightString(FmtString("%f",tmpVal));
+							}
+							break;
+						case json::value_t::binary:
+							break;
+						}
+					}
+					tmpObj = bufferDescription.value("FLOAT",json());
+					if (tmpObj != nullptr && tmpObj.is_number() && tmpObj.get<bool>())	{
+						newTargetBuffer->setFloatFlag(true);
+					}
+					//	don't forget to flag it as a persistent buffer!
+					newTargetBuffer->setPersistentFlag(true);
+					//	add the new persistent buffer (as a render pass) to the array of render passes
+					_renderPasses.push_back(newTargetBuffer);
+				}
+			}
+		}
+	}
+	
 	//	parse the PASSES array of dictionaries describing the various passes (which may need temp buffers)
 	anObj = (caughtJSONException) ? json() : jblob.value("PASSES",json());
 	if (!anObj.is_null())	{
@@ -1463,11 +1468,11 @@ void ISFDoc::_initWithRawFragShaderString(const string & inRawFile)	{
 					if (passRef == nullptr)	{
 						//	create a new target buffer, set its name
 						passRef = ISFPassTarget::Create(tmpBufferName, this);
+						//	add the new target buffer to the array of render passes
+						_renderPasses.push_back(passRef);
 					}
 				}
 				else	{
-					//	add an empty render pass to the array of render passes
-					//_renderPasses.emplace_back("");
 					passRef = ISFPassTarget::Create("", this);
 				}
 				
@@ -1583,13 +1588,7 @@ void ISFDoc::_initWithRawFragShaderString(const string & inRawFile)	{
 				else if (tmpFloatFlag.is_number())
 					tmpFloatVal = CreateISFValBool( (tmpFloatFlag.get<double>()>0.) ? true : false );
 				passRef->setFloatFlag( (tmpFloatVal.getDoubleVal()>0.) ? true : false );
-				//	add the new render pass to the array of render passes
-				//_renderPasses.emplace_back(tmpBufferName);
 				
-				
-				if (passRef != nullptr)	{
-					_renderPasses.push_back(passRef);
-				}
 			}
 		}
 	}
