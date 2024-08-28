@@ -1481,6 +1481,8 @@ void ISFDoc::_initWithRawFragShaderString(const string & inRawFile)	{
 				}
 				else	{
 					passRef = ISFPassTarget::Create("", this);
+					//	add the new target buffer to the array of render passes
+					_renderPasses.push_back(passRef);
 				}
 				
 				//	check for PERSISTENT flag as per the ISF 2.0 spec
