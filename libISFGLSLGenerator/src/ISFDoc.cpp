@@ -64,6 +64,13 @@ ISFDoc::ISFDoc(const string & inPath, const bool & throwExcept) noexcept(false)	
 	//cout << "\tpath is " << *_path << endl;
 	//cout << "\tname is " << *_name << endl;
 	
+	//	check the filesize of the passed path- if it's >= 1 MB, assume that it's not an ISF file and bail
+	if (std::filesystem::file_size(fullPath) >= 1*1024*1024)	{
+		if (_throwExcept)
+			throw ISFErr(ISFErrType_MissingResource, "cannot create ISFDoc from passed path", inPath);
+		else
+			return;
+	}
 	
 	//	read the passed file into a string
 	ifstream		fin;
