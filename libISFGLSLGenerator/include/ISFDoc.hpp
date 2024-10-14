@@ -55,6 +55,7 @@ class ISFDoc	{
 		std::string			*_jsonString = nullptr;	//	the JSON std::string copied from the source- doesn't include any comments before/after it
 		std::string			*_vertShaderSource = nullptr;	//	the raw vert shader source before being find-and-replaced
 		std::string			*_fragShaderSource = nullptr;	//	the raw frag shader source before being find-and-replaced
+		bool		_hasCustomVertShader = false;
 		
 	public:
 		
@@ -108,6 +109,8 @@ class ISFDoc	{
 		uint32_t getMaxUBOSize() const { return _maxUBOSize; }
 		//!	Returns a std::vector containing strings listing the receiver's categories.
 		std::vector<std::string> & categories() { return _categories; }
+		//!	Returns a bool indicating whether or not the ISF's vertex shader was generated using a user-provided vertex shader.
+		bool hasCustomVertShader() const { return _hasCustomVertShader; }
 		
 		///@}
 		

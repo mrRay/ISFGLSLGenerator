@@ -41,6 +41,7 @@ ISFDoc::ISFDoc(const string & inFSContents, const string & inVSContents, const s
 		tmpPath /= "XXX.fs";
 		_path = new string( tmpPath.string() );
 	}
+	_hasCustomVertShader = true;
 	_name = new string("");
 	_throwExcept = throwExcept;
 	
@@ -98,19 +99,24 @@ ISFDoc::ISFDoc(const string & inPath, const bool & throwExcept) noexcept(false)	
 	cout << rawFile << endl;
 	cout << "**************************" << endl;
 	*/
-
+	
+	_hasCustomVertShader = false;
 	//	look for a vert shader that matches the name of the frag shader
 	std::filesystem::path		vertShaderPath { inPath };
 	vertShaderPath.replace_extension("vs");
-	if (!std::filesystem::exists(vertShaderPath))
+	if (!std::filesystem::exists(vertShaderPath))	{
 		vertShaderPath.replace_extension("vert");
-	if (!std::filesystem::exists(vertShaderPath))
+	}
+	if (!std::filesystem::exists(vertShaderPath))	{
 		_vertShaderSource = new string(ISFVertPassthru_GL2);
+	}
 	else	{
 		fin.open(vertShaderPath.string());
-		if (!fin.is_open())
+		if (!fin.is_open())	{
 			_vertShaderSource = new string(ISFVertPassthru_GL2);
+		}
 		else	{
+			_hasCustomVertShader = true;
 			_vertShaderSource = new string( static_cast<stringstream const &>(stringstream() << fin.rdbuf()).str() );
 			fin.close();
 		}
