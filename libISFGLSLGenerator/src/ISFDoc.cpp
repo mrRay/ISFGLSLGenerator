@@ -73,6 +73,14 @@ ISFDoc::ISFDoc(const string & inPath, const bool & throwExcept) noexcept(false)	
 			return;
 	}
 	
+	//	check to make sure the file is a regular file
+	if (!std::filesystem::is_regular_file(fullPath))	{
+		if (_throwExcept)
+			throw ISFErr(ISFErrType_MissingResource, "passed path is not a regular file", inPath);
+		else
+			return;
+	}
+	
 	//	check the filesize of the passed path- if it's >= 1 MB, assume that it's not an ISF file and bail
 	if (std::filesystem::file_size(fullPath) >= 1*1024*1024)
 	{
